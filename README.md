@@ -1,6 +1,6 @@
 # Personal Assistant
 
-A private English/Russian assistant built with Python, LangGraph, Telegram, and
+A private multilingual assistant built with Python, LangGraph, Telegram, and
 PostgreSQL/pgvector. Default local inference is **Qwen3.8-27B Q4_K_M** through
 llama.cpp, with a native Metal backend on an Apple Silicon Mac.
 
@@ -158,7 +158,7 @@ and Telegram bot directly on the host. For manual startup, use this order:
 | 4 | Separate model terminal | `uv run assistant inference` | Model loaded and listening on port 8080 |
 | 5 | Separate API terminal | `uv run assistant api` | Application startup complete |
 | 6 | Setup terminal | `curl --fail --silent --show-error http://127.0.0.1:8000/health` | `{"status":"ok"}` |
-| 7 | Setup terminal | `uv run assistant chat --text "Say hello in Russian."` | An assistant reply |
+| 7 | Setup terminal | `uv run assistant chat --text "Say hello briefly."` | An assistant reply |
 | 8 | Separate bot terminal | `uv run assistant bot` | Private `/start`, `/notes`, and ordinary chat work |
 
 This is a checklist for an already configured installation. For a fresh checkout,
@@ -176,7 +176,7 @@ token from `.env`; the CLI supplies it automatically. If a request fails after a
 write, retry identical input/thread with the `--request-id` printed by the CLI.
 
 Notes/facts persist across conversations. Use an explicit request such as
-`Remember my preferred language is Russian` to store a personal fact. Plain chat
+`Remember my home city is Belgrade` to store a personal fact. Plain chat
 does not automatically become permanent personal memory.
 
 Deletion and cancellation require a separate command containing the exact resource ID:
@@ -190,11 +190,11 @@ Deletion and cancellation require a separate command containing the exact resour
 Replace `<ID>` with the note, fact, or event ID returned by the assistant. These work
 in Telegram or as CLI/API chat messages. Negated requests, quoted examples, and
 discussion of deletion never authorize these operations. Creation and editing accept
-explicit requests in English or Russian, such as `Save a note: ...`, `Сохрани заметку: ...`,
+explicit requests, such as `Save a note: ...`,
 `Remind me tomorrow ...`, or `Create a calendar event ...`. Put the operation and object
 before a colon/newline; text after it is content, not additional permission.
 Edits and task completion must identify the item by its ID or exact unique stored title,
-for example `Update the Project note: ...` or `Обнови заметку Проект: ...`.
+for example `Update the Project note: ...`.
 Title matching is case-sensitive; duplicate titles require an ID. An ambiguous request
 does not authorize a write, even when the model proposes one.
 
@@ -234,7 +234,7 @@ inference process is unnecessary. Profiles never start services or send requests
 The local runtime must support the model architecture, chat template, and JSON-schema
 output. A GGUF file alone does not establish compatibility or agent quality. After a
 switch, run `uv run assistant evaluate --output data/new-model-evaluation.json` for
-the bilingual planner checks, then test representative assistant workflows.
+the multilingual planner checks, then test representative assistant workflows.
 
 Changing the chat model retains notes, facts, tasks, and conversations. It does not
 require reindexing; changing the separate embedding model does. Voice models are also
@@ -264,8 +264,8 @@ uv run assistant bot
 `/id` returns the sender's own ID in a private chat. All assistant commands and data
 require the configured owner's private chat. Commands: `/start`, `/help`, `/new`,
 `/notes`, `/tasks`, `/export`, `/agenda` (next seven days), `/calendar` (ICS export).
-Free-form requests work in English and Russian. `/new`
-starts a conversation while retaining notes/facts; the bot's currently selected thread
+The assistant supports multilingual free-form requests. `/new` starts a conversation
+while retaining notes/facts; the bot's currently selected thread
 is process-local and resets to its default thread after a bot restart.
 
 ## Semantic memory and RAG
@@ -331,10 +331,10 @@ clock. No website or language model is used to establish the system time.
 
 Storage timestamps use UTC. Note/history date ranges are interpreted as local calendar
 dates in this timezone, with an inclusive start and exclusive end. They respect local
-day boundaries and daylight-saving changes. You can ask in English or Russian, for example:
+day boundaries and daylight-saving changes. Example requests:
 
 - `Show notes I created yesterday.`
-- `Покажи заметки, изменённые на прошлой неделе.`
+- `Show notes updated last week.`
 - `When did I create this note, and when was it last edited?`
 
 The model translates natural-language date requests into tool arguments; SQL filters
@@ -359,8 +359,8 @@ uv run assistant migrate
 
 Try these in the owner's private Telegram chat:
 
-- `Create a private calendar event called Interview tomorrow from 10:00 to 11:00.`
-- `Что у меня в календаре завтра?`
+- `Create a calendar event called Interview tomorrow from 10:00 to 11:00.`
+- `What is on my calendar tomorrow?`
 - `Move calendar event <ID> to 11 November 2030, 13:00–14:00 Europe/Belgrade.`
 - `/cancel_event <ID>`
 - `/agenda` to list the next seven days, or `/calendar` to download an ICS snapshot.
@@ -392,7 +392,7 @@ ASSISTANT_DUCKDUCKGO_REGION=wt-wt
 ```
 
 `wt-wt` uses worldwide results; `us-en` and `ru-ru` are regional alternatives. Queries
-can be in English or Russian. Only the DuckDuckGo backend is selected; the library's
+can be multilingual. Only the DuckDuckGo backend is selected; the library's
 multi-provider `auto` mode is not used. Search queries are sent to the selected
 provider; private notes are not automatically attached to search requests.
 
@@ -455,7 +455,7 @@ ASSISTANT_WEATHER_DEFAULT_LONGITUDE=20.4651
 The public configuration template leaves coordinates empty. Supply both coordinates
 or neither; without a default the assistant asks for a location. Naming another city
 overrides the default through Open-Meteo geocoding. A place can include a country/region,
-such as `London, GB` or `Лондон, Великобритания`. Ambiguous matches are returned as
+such as `London, GB` or `Paris, France`. Ambiguous matches are returned as
 candidates for clarification, rather than silently choosing between similar cities.
 Explicit `latitude,longitude` requests also work. Timezone alone never sets a location.
 
@@ -464,9 +464,9 @@ terminal, then `uv run assistant api`. No migration, new model, or bot restart i
 for weather. Containerized APIs need their image rebuilt and container recreated.
 Try:
 
-- `Какая сейчас погода?`
+- `What is the weather right now?`
 - `What is tomorrow's weather? Include minimum and maximum temperatures.`
-- `Покажи почасовой прогноз на завтра.`
+- `Show the hourly forecast for tomorrow.`
 - `What is tomorrow's weather in London, UK, in Fahrenheit?`
 
 Forecasts support up to 16 days, including today; `week` means the next seven days.
@@ -597,15 +597,16 @@ weights. To use whisper.cpp, set `ASSISTANT_STT_BACKEND=whisper_cpp` and configu
 `ASSISTANT_WHISPER_EXECUTABLE` / `ASSISTANT_WHISPER_MODEL`; this backend needs FFmpeg.
 
 For optional audio replies, install [Piper](https://github.com/OHF-Voice/piper1-gpl) and
-FFmpeg, download English/Russian Piper voices with their matching `.onnx.json` files,
-configure their existing settings, and set `ASSISTANT_VOICE_OUTPUT_ENABLED=true`.
+FFmpeg, download Piper voices for the configured `en`/`ru` speech outputs with their
+matching `.onnx.json` files, configure their existing settings, and set
+`ASSISTANT_VOICE_OUTPUT_ENABLED=true`.
 TTS reads the first 1,500 characters and labels partial audio. Faster-whisper input alone
 needs neither Piper, whisper-cli, nor a system FFmpeg executable; PyAV decodes the audio.
 
 The companion is HTTP-based, so a Docker bot can use the native Mac service: start speech
 with `--host 0.0.0.0` for container access; Compose uses `host.docker.internal:8765`.
 The default application Docker image does not install the optional speech extra or weights.
-Synthetic English/Russian Ogg/Opus transcription has been checked with the real large-v3
+Synthetic multilingual Ogg/Opus transcription has been checked with the real large-v3
 model. Real personal voice accuracy and live Telegram delivery still need a user check.
 
 ## Images with vision models
@@ -613,7 +614,7 @@ model. Real personal voice accuracy and live Telegram delivery still need a user
 Send one Telegram photo or JPEG/PNG/WebP file with a caption, or use:
 
 ```sh
-uv run assistant chat --image screenshot.png --text "Что показано на скриншоте?"
+uv run assistant chat --image screenshot.png --text "What does this screenshot show?"
 ```
 
 The selected model must support images and have `model_supports_images=true` in its
@@ -634,9 +635,9 @@ This update needs migration `0003`; `assistant start` applies it automatically.
 
 The managed `pdf-reader` server uses
 [mcp-pdf-reader 0.1.7](https://pypi.org/project/mcp-pdf-reader/) through a read-only
-adapter. It lists PDFs and extracts bounded page excerpts, with optional English/Russian
-OCR. Files stay local; extracted excerpts go to your configured chat model, including a
-hosted provider if selected. Send a PDF as a **Telegram file/document**, optionally with
+adapter. It lists PDFs and extracts bounded page excerpts, with optional OCR using the
+configured language data. Files stay local; extracted excerpts go to your configured
+chat model, including a hosted provider if selected. Send a PDF as a **Telegram file/document**, optionally with
 a question in its caption, or put a local PDF in `data/pdf`. Uploads need no vision model.
 PDF URL downloads are not implemented. See [PDF setup and usage](docs/pdf.md).
 
@@ -651,7 +652,7 @@ Set `ASSISTANT_PDF_ENABLED=true` in your private `.env`, then restart with:
 uv run --extra speech --extra pdf assistant start
 ```
 
-Ask, for example: `Прочитай первую страницу resume.pdf` or
+Ask, for example: `Read the first page of resume.pdf` or
 `List the PDFs available to you`. Each read allows up to three pages of a PDF up to
 50 MiB; excerpts include filename/page provenance. Long-document indexing is separate.
 Telegram/API uploads allow one PDF up to 10 MB. They are retained in `data/pdf-uploads`
@@ -716,7 +717,7 @@ the API and database; Compose applies migrations through its `migrate` service:
 mkdir -p data/pdf data/tessdata
 docker compose up -d --build --wait api
 curl --fail --silent --show-error http://127.0.0.1:8000/health
-uv run assistant chat --text "Say hello in Russian."
+uv run assistant chat --text "Say hello briefly."
 ```
 
 Once these checks pass, start the bot and check its private `/start` command:
@@ -779,7 +780,7 @@ docker compose -f compose.test.yaml stop
 ```
 
 GitHub Actions runs lint, format checks, migrations, the database test, and the offline demo.
-Once a real inference server is available, run the bilingual planner benchmark:
+Once a real inference server is available, run the multilingual planner benchmark:
 
 ```sh
 uv run assistant evaluate --output data/planner-evaluation.json

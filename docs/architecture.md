@@ -178,7 +178,7 @@ appropriate for an initial personal corpus. No ANN index is required at this sca
 
 The embedding service is optional and disabled by default. The API reports `keyword`
 until it is explicitly enabled. Cross-language semantic retrieval requires the embedding
-service and still needs real bilingual evaluation. The unit/integration tests use synthetic
+service and still needs real multilingual evaluation. The unit/integration tests use synthetic
 vectors and do not establish the quality of BGE-M3 or Qwen.
 
 Lexical relevance is ranked in SQL before the candidate limit, so newer partial matches
@@ -229,7 +229,7 @@ require matching server settings; static profile validation cannot count a model
 is not running yet. The standalone check also works for manually started services.
 
 Conversation context stays structured. Recent turns receive space before the old
-summary, including for Russian text and escaped content. Further reduction discards
+summary, including for multibyte Unicode text and escaped content. Further reduction discards
 old summaries and incidental retrieval before recent turns. A marker records reduction.
 The latest request, full reviewed draft, and supplied tool evidence are retained; an
 irreducible oversized request fails explicitly. Messages have a 12,000-character schema
@@ -312,7 +312,7 @@ PyAV decodes/resamples input to mono 16 kHz with a hard three-minute sample limi
 compressed uploads are additionally capped at 10 MB. Recognition/VAD runs in a worker
 thread under the companion's lock, including lazy segment iteration, so native inference
 does not block its async event loop. Automatic language detection preserves the spoken
-language; fixed English/Russian recognition can also be selected.
+language; fixed `en`/`ru` recognition can also be selected.
 
 On this Mac, faster-whisper uses CPU/INT8; CTranslate2 does not expose Metal/MPS.
 The optional `speech` dependency group is excluded from the default app Docker image;

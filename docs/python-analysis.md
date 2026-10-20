@@ -97,7 +97,7 @@ installed by this feature. Only validated PNGs are exported from jobs.
 ## Results, repair and delivery
 
 Try: “Use Python to calculate the mean of 10, 20, 30, 40 and plot a histogram.” Or:
-“Построй график y = x² от −5 до 5 и вычисли среднее для [2, 4, 6].”
+“Plot y = x² from −5 to 5 and calculate the mean of [2, 4, 6].”
 
 The reviewer may ask the supervisor to regenerate/re-execute failed code within the
 existing re-planning limit. Error output is available as evidence. Each Python task has

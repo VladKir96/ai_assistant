@@ -62,7 +62,7 @@ reports configured support and limits, not a successful runtime vision test.
 
 ## Usage
 
-Send one Telegram photo or JPEG/PNG/WebP file with a caption such as `Что на картинке?`.
+Send one Telegram photo or JPEG/PNG/WebP file with a caption such as `What is in this picture?`.
 A file preserves screenshot quality before preprocessing. Without a caption, the bot
 asks for a description in your Telegram account language (EN/RU). Albums are rejected.
 Both sender and private chat must match the owner before any download.

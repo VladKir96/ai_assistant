@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "personal-assistant"
 version = "0.1.0"
-description = "A private, bilingual LangGraph assistant with Telegram, durable memory, and local inference."
+description = "A private, multilingual LangGraph assistant with Telegram, durable memory, and local inference."
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
 dependencies = [

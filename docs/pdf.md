@@ -39,10 +39,10 @@ available, subject to the shared catalog budget.
 
 Examples to send as ordinary Telegram text messages:
 
-- `Какие PDF-файлы доступны?`
-- `Прочитай первую страницу resume.pdf.`
+- `Which PDF files are available?`
+- `Read the first page of resume.pdf.`
 - `Summarize pages 2–3 of contract.pdf and cite the page numbers.`
-- `Распознай первую страницу scan.pdf через OCR, язык русский.`
+- `Run OCR on the first page of scan.pdf.`
 
 Name the exact file when reading it. Directory discovery and a read requiring a
 discovered filename may need separate messages. Listing covers top-level local PDFs
@@ -52,8 +52,9 @@ entries are scanned per listing. The result reports when that scan is limited.
 ## Telegram PDF uploads
 
 Attach one PDF as a file in the owner's private bot chat. Add a question as its caption,
-for example `Кратко опиши резюме` or `Summarize pages 4–5`. Without a caption the bot
-asks for a brief summary of the first three pages, in your Telegram account language.
+for example `Briefly summarize this resume` or `Summarize pages 4–5`. Without a caption,
+the bot asks for a brief summary of the first three pages using an English default request.
+Add a caption to choose the response language.
 Uploads work with text-only models; image/vision support is not required. Files with
 PDF MIME type or a `.pdf` filename are routed to PDF handling, but decoded content is
 validated on the API. Fake, damaged, empty and password-protected PDFs are rejected.
@@ -61,7 +62,7 @@ validated on the API. Fake, damaged, empty and password-protected PDFs are rejec
 The limit is **one PDF per message, 10 MB**. Albums are rejected. Owner/private-chat,
 announced size and actual streamed-download size are checked before an upload reaches
 the API. Send scanned PDFs with a caption asking for OCR; this still requires the
-English/Russian language data described below.
+configured language data described below.
 
 The API retains the original bytes in `ASSISTANT_PDF_UPLOAD_DIRECTORY`, default
 `data/pdf-uploads`, with private file permissions and a SHA-256 filename. Client names
@@ -146,7 +147,7 @@ docker compose up -d --build --wait api
 docker compose --profile telegram up -d --force-recreate bot
 ```
 
-Enable `ASSISTANT_PDF_ENABLED=true` in `.env` for Docker too. English/Russian OCR needs
+Enable `ASSISTANT_PDF_ENABLED=true` in `.env` for Docker too. OCR with the default `eng+rus` setting needs
 the language files in the mounted tessdata folder. An empty tessdata folder permits
 embedded-text reads; OCR will report failure if requested without the files.
 

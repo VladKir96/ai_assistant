@@ -26,7 +26,7 @@ class DemoModel:
                     Action(
                         name="save_note",
                         title="Assistant project",
-                        content="Use English and Russian.",
+                        content="Provide multilingual assistance.",
                         tags=["demo"],
                     )
                 ],
@@ -34,7 +34,7 @@ class DemoModel:
         if schema is Draft:
             result = payload["operation_results"][0]
             assert result["ok"]
-            return Draft(answer="Saved the bilingual project note / Заметка о проекте сохранена.")
+            return Draft(answer="Saved the multilingual project note.")
         raise AssertionError(f"Unexpected demo call: {schema}")
 
 
@@ -63,13 +63,13 @@ async def run_demo():
             ).compile(InMemorySaver())
             service = AssistantService(db, graph, settings.input_budget)
             request = ChatRequest(
-                request_id=uuid4(), text="Save a note: project uses English and Russian."
+                request_id=uuid4(), text="Save a note: provide multilingual assistance."
             )
             response = await service.chat(request)
             replay = await service.chat(request)
             assert response == replay
             assert len(await repository.list_documents("note")) == 1
-            assert (await repository.search("English"))[0]["title"] == "Assistant project"
+            assert (await repository.search("multilingual"))[0]["title"] == "Assistant project"
             print(response.text)
             print("PASS: LangGraph routing, note persistence, retrieval, and duplicate protection.")
             print("Deterministic demo only; no model, Telegram account, or internet was used.")

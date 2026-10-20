@@ -299,7 +299,7 @@ curl --fail --silent --show-error http://127.0.0.1:8000/health
 the model. Verify the full assistant path with a simple text request:
 
 ```sh
-uv run assistant chat --thread startup-check --text "Reply with a short greeting in Russian."
+uv run assistant chat --thread startup-check --text "Reply with a short greeting."
 ```
 
 **Ready:** the command prints an assistant response. A response can take several
@@ -330,9 +330,9 @@ In the bot's **private Telegram chat**, check these in order:
 | `/id` | Your personal numeric user ID | Telegram connection and identity discovery |
 | `/start` | Help/welcome reply | The bot accepts you as its configured owner |
 | `/time` | Date, time, UTC offset, timezone, weekday | API clock without model inference |
-| `/notes` | Saved notes or `No items / Пока пусто.` | Bot → API → database |
+| `/notes` | Saved notes or `No items.` | Bot → API → database |
 | `/agenda` | Upcoming events or an empty list | Private calendar access |
-| `Привет! Ответь коротко по-русски.` | An assistant response | Bot → API → model → reply |
+| `Hello! Please reply briefly.` | An assistant response | Bot → API → model → reply |
 
 If `/id` works but `/start` does not, compare the returned ID with your saved
 `ASSISTANT_TELEGRAM_OWNER_ID`, then stop and restart the bot after correcting it.
@@ -348,7 +348,7 @@ for event creation, moving/cancellation, local-date note queries, and current li
 
 For web search after text chat works, keep `ASSISTANT_SEARCH_PROVIDER=duckduckgo` in
 `.env` and restart the API after any edits. This provider needs no API key; dependency
-installation includes `ddgs`. You can ask the assistant to search in English or Russian.
+installation includes `ddgs`. The assistant supports multilingual search requests.
 `ASSISTANT_DUCKDUCKGO_REGION=wt-wt` uses worldwide results. DuckDuckGo may block or
 rate-limit automated requests; a reported search failure does not disable reading a
 supplied public URL. For Tavily, select `tavily` explicitly and supply its key. Job
@@ -407,7 +407,7 @@ or closing a terminal does not automatically launch the dependent services.
 | --- | --- | --- |
 | Semantic memory/RAG | Install embeddings extra, configure HTTP embeddings, then reindex | Local embeddings companion on port 8081, plus the base stack |
 | Voice input | Install the speech extra and download faster-whisper; configure CPU/INT8 and enable voice | Speech companion on port 8765 and restarted bot; text replies work without TTS |
-| Voice output | Install FFmpeg/Piper and English/Russian voices; enable voice output | Speech companion plus bot with `ASSISTANT_VOICE_OUTPUT_ENABLED=true` |
+| Voice output | Install FFmpeg/Piper and configured voices; enable voice output | Speech companion plus bot with `ASSISTANT_VOICE_OUTPUT_ENABLED=true` |
 | PDF reading/uploads | Install the PDF extra, create `data/pdf`, enable PDF in `.env`; OCR needs language files | Managed stdio server; uploads accepted as Telegram documents; [setup](pdf.md) |
 | Image understanding | Select a vision-capable model/profile; local inference needs its matching mmproj | Existing model service; [setup](images.md) |
 | Reminder delivery | Configure Telegram owner, Redis, and reminder scheduling | Redis, Celery worker, and Celery Beat scheduler |

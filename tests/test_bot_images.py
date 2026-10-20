@@ -93,7 +93,7 @@ async def test_telegram_images_are_owner_only_bounded_and_use_multipart(
         assert downloads == ["photo", "document", "too-big-stream"]
         assert len(posts) == 2
         assert "Что на фото?".encode() in posts[0]
-        assert "Опиши изображение.".encode() in posts[1]
+        assert b"Describe this image." in posts[1]
         assert raw in posts[0]
     else:
         assert posts == downloads == []

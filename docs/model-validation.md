@@ -76,7 +76,7 @@ is in `data/qwen-live-smoke-reviewed.json`; the initial run is in `data/qwen-liv
 ## Scope
 
 These checks validate real structured generation, graph execution, persistence, replay,
-basic bilingual responses, source recall, and review routing for a few controlled tasks.
+basic multilingual responses, source recall, and review routing for a few controlled tasks.
 They do not validate broad research accuracy, long conversation summarization quality,
 MCP decision quality, semantic cross-language retrieval, Telegram delivery, or speech.
 Those capabilities need separate evaluations with their actual services and models.

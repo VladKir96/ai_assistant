@@ -100,7 +100,7 @@ async def deliver_due(active_settings: Settings):
                         + "/sendMessage",
                         json={
                             "chat_id": active_settings.telegram_owner_id,
-                            "text": f"Reminder / Напоминание: {task['title']}",
+                            "text": f"Reminder: {task['title']}",
                         },
                     )
                     response.raise_for_status()

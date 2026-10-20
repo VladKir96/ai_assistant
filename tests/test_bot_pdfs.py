@@ -85,7 +85,7 @@ async def test_pdf_documents_use_pdf_route_without_vision(harness, monkeypatch, 
         assert downloads == ["pdf", "extension-only", "stream-overflow"]
         assert len(posts) == 2 and raw in posts[0]
         assert "Кратко опиши резюме".encode() in posts[0]
-        assert "первым трём страницам".encode() in posts[1]
+        assert b"Briefly summarize the first three pages" in posts[1]
         assert b"RESUME.PDF" in posts[1]
     else:
         assert posts == downloads == []

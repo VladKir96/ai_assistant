@@ -87,9 +87,7 @@ async def run_bot(settings: Settings):
                 and not message.from_user.is_bot
                 and message.chat.id == message.from_user.id
             ):
-                await message.answer(
-                    f"Your Telegram user ID / Ваш Telegram ID: {message.from_user.id}"
-                )
+                await message.answer(f"Your Telegram user ID: {message.from_user.id}")
 
         @dispatcher.message(Command("start", "help"))
         async def help_message(message: Message):
@@ -104,7 +102,7 @@ async def run_bot(settings: Settings):
                     "Send a photo or JPEG/PNG/WebP file with a caption "
                     "when a vision model is configured.\n"
                     "Send a PDF as a file with a question when PDF reading is enabled.\n"
-                    "Пишите по-русски или по-английски. Для сохранения факта скажите «запомни»."
+                    "The assistant is multilingual. To save a fact, say 'remember'."
                 )
 
         @dispatcher.message(Command("new"))
@@ -112,9 +110,7 @@ async def run_bot(settings: Settings):
             nonlocal thread_id
             if permitted(message, settings.telegram_owner_id):
                 thread_id = f"tg:{settings.telegram_owner_id}:{uuid4().hex[:12]}"
-                await message.answer(
-                    "New conversation / Новый разговор. Notes and facts are retained."
-                )
+                await message.answer("New conversation. Notes and facts are retained.")
 
         @dispatcher.message(Command("time"))
         async def current_time(message: Message):
@@ -128,7 +124,7 @@ async def run_bot(settings: Settings):
                     f"{clock['current_time']}\n{clock['timezone']} · {clock['current_weekday']}"
                 )
             except httpx.HTTPError:
-                await message.answer("Service unavailable / Сервис недоступен.")
+                await message.answer("Service unavailable.")
 
         @dispatcher.message(Command("notes", "tasks", "export", "agenda", "calendar"))
         async def stored_data(message: Message):
@@ -156,7 +152,7 @@ async def run_bot(settings: Settings):
                             + (
                                 f"{item['local_start']} → {item['local_end']} "
                                 f"({item['timezone']})"
-                                + (" · all-day / весь день" if item["all_day"] else "")
+                                + (" · all-day" if item["all_day"] else "")
                                 + "\n"
                                 if command == "agenda"
                                 else ""
@@ -164,12 +160,12 @@ async def run_bot(settings: Settings):
                             + f"ID: {item['id']}"
                             for item in items
                         )
-                        or "No items / Пока пусто."
+                        or "No items."
                     )
                     for part in split_text(text):
                         await message.answer(part)
             except httpx.HTTPError:
-                await message.answer("Service unavailable / Сервис недоступен.")
+                await message.answer("Service unavailable.")
 
         async def respond(
             message: Message, text: str, image: bytes | None = None, *, pdf: bytes | None = None
@@ -223,27 +219,25 @@ async def run_bot(settings: Settings):
                         except TelegramAPIError:
                             await message.answer_document(upload)
                     except (httpx.HTTPError, ValueError, TelegramAPIError):
-                        await message.answer("Chart unavailable / График недоступен.")
+                        await message.answer("Chart unavailable.")
                 if settings.voice_enabled and settings.voice_output_enabled and message.voice:
                     from personal_assistant.voice import SpeechClient
 
                     try:
                         audio = await SpeechClient(settings).speak(answer[:1500], text)
                         if len(answer) > 1500:
-                            await message.answer(
-                                "Audio contains the first part / Озвучено начало ответа."
-                            )
+                            await message.answer("Audio contains the first part of the answer.")
                         await message.answer_voice(BufferedInputFile(audio, filename="answer.ogg"))
                     except (httpx.HTTPError, ValueError):
-                        await message.answer("Voice output unavailable / Озвучка недоступна.")
+                        await message.answer("Voice output unavailable.")
             except httpx.HTTPStatusError as error:
                 try:
                     detail = error.response.json().get("detail", "Request failed")
                 except (ValueError, AttributeError):
-                    detail = "Request failed / Запрос не выполнен."
+                    detail = "Request failed."
                 await message.answer(str(detail)[:1500])
             except httpx.HTTPError:
-                await message.answer("Service unavailable / Сервис недоступен.")
+                await message.answer("Service unavailable.")
 
         @dispatcher.message(
             (F.document.mime_type == "application/pdf")
@@ -253,39 +247,32 @@ async def run_bot(settings: Settings):
             if not permitted(message, settings.telegram_owner_id):
                 return
             if not settings.pdf_enabled:
-                await message.answer("PDF reading is disabled / Чтение PDF отключено.")
+                await message.answer("PDF reading is disabled.")
                 return
             if message.media_group_id:
-                await message.answer("Send one PDF at a time / Отправьте один PDF за раз.")
+                await message.answer("Send one PDF at a time.")
                 return
             if (message.document.file_size or 0) > MAX_PDF_UPLOAD_BYTES:
-                await message.answer("PDF upload limit: 10 MB / Лимит PDF: 10 МБ.")
+                await message.answer("PDF upload limit: 10 MB.")
                 return
             upload = BoundedUploadBuffer(MAX_PDF_UPLOAD_BYTES)
             try:
                 await bot.download(message.document, destination=upload)
-                default = (
-                    "Кратко опиши PDF по первым трём страницам."
-                    if (message.from_user.language_code or "").startswith("ru")
-                    else "Briefly summarize the first three pages of this PDF."
-                )
+                default = "Briefly summarize the first three pages of this PDF."
                 await respond(message, message.caption or default, pdf=upload.getvalue())
             except (ValueError, OSError, TelegramAPIError):
-                await message.answer("PDF download failed or exceeds 10 MB / Ошибка загрузки PDF.")
+                await message.answer("PDF download failed or exceeds 10 MB.")
 
         @dispatcher.message(F.photo | F.document.mime_type.startswith("image/"))
         async def image_message(message: Message):
             if not permitted(message, settings.telegram_owner_id):
                 return
             if message.media_group_id:
-                await message.answer(
-                    "Send one image per message / Отправьте одно изображение за раз."
-                )
+                await message.answer("Send one image per message.")
                 return
             if not settings.model_supports_images:
                 await message.answer(
-                    "Image input is disabled for this model. Configure a vision model first. / "
-                    "Для работы с изображениями сначала настройте модель с поддержкой зрения."
+                    "Image input is disabled for this model. Configure a vision model first."
                 )
                 return
             if message.document and message.document.mime_type not in {
@@ -293,35 +280,29 @@ async def run_bot(settings: Settings):
                 "image/png",
                 "image/webp",
             }:
-                await message.answer("Use JPEG, PNG or WebP / Используйте JPEG, PNG или WebP.")
+                await message.answer("Use JPEG, PNG or WebP.")
                 return
             media = message.photo[-1] if message.photo else message.document
             if (media.file_size or 0) > MAX_IMAGE_BYTES:
-                await message.answer("Image limit: 10 MB / Лимит изображения: 10 МБ.")
+                await message.answer("Image limit: 10 MB.")
                 return
             image = BoundedUploadBuffer(MAX_IMAGE_BYTES)
             try:
                 await bot.download(media, destination=image)
-                default = (
-                    "Опиши изображение."
-                    if (message.from_user.language_code or "").startswith("ru")
-                    else "Describe this image."
-                )
+                default = "Describe this image."
                 await respond(message, message.caption or default, image.getvalue())
             except (ValueError, OSError, TelegramAPIError):
-                await message.answer(
-                    "Image download failed or exceeds 10 MB / Ошибка загрузки изображения."
-                )
+                await message.answer("Image download failed or exceeds 10 MB.")
 
         @dispatcher.message(F.voice)
         async def voice_message(message: Message):
             if not permitted(message, settings.telegram_owner_id):
                 return
             if not settings.voice_enabled:
-                await message.answer("Voice is disabled / Голосовой ввод отключён.")
+                await message.answer("Voice is disabled.")
                 return
             if message.voice.duration > 180 or (message.voice.file_size or 0) > 10_000_000:
-                await message.answer("Voice limit: 3 minutes, 10 MB / Лимит: 3 минуты, 10 МБ.")
+                await message.answer("Voice limit: 3 minutes, 10 MB.")
                 return
             from personal_assistant.voice import SpeechClient
 
@@ -331,7 +312,7 @@ async def run_bot(settings: Settings):
                 text = await SpeechClient(settings).transcribe(audio.getvalue())
                 await respond(message, text)
             except (httpx.HTTPError, ValueError):
-                await message.answer("Transcription unavailable / Распознавание недоступно.")
+                await message.answer("Transcription unavailable.")
 
         @dispatcher.message(F.text)
         async def text_message(message: Message):

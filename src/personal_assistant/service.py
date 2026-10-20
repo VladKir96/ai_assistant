@@ -175,7 +175,7 @@ class AssistantService:
                     result = await self.graph.ainvoke(initial, config)
                 all_artifacts = self.response_artifacts(result["results"], limit=None)
                 chart_notice = (
-                    "\n\nOnly the first three charts are attached / Прикреплены первые три графика."
+                    "\n\nOnly the first three charts are attached."
                     if len(all_artifacts) > 3
                     else ""
                 )

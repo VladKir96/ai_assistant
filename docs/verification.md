@@ -4,7 +4,7 @@ Final code-review fixes verified on 2026-10-20:
 
 - Writes now require explicit note/task/calendar intent; edits/completion bind to an
   exact UUID or unique stored title. Regression checks cover unrelated verbs, quoted/
-  escaped/incomplete instructions, bilingual commands, wrong targets, duplicate titles,
+  escaped/incomplete instructions, multilingual commands, wrong targets, duplicate titles,
   and a rename followed by review repair. Authorization metadata comes from storage.
 - Python tasks have stable analysis identities. Partial repairs preserve other tasks'
   charts and replace only the repaired task's evidence/artifacts, including failed or
@@ -134,7 +134,7 @@ Bounded reviewer/supervisor re-planning verified on 2026-10-19:
   complete previous operation evidence in two payload fields. Base first-round planner
   instructions remain unchanged for existing context-budget regressions.
 - The final complete suite passed 292 tests, including isolated PostgreSQL, real
-  bilingual PDF OCR and a real MCP fourth-page read triggered by rejected review.
+  multilingual PDF OCR and a real MCP fourth-page read triggered by rejected review.
   Regressions cover read retry, specialist changes, reordered/new writes, corrective
   updates, cached-update invalidation, zero/default/maximum limits, feedback injection,
   HTTP-model/token-counter payloads, durable restart limits and legacy state recovery.
@@ -169,7 +169,7 @@ Telegram PDF uploads verified on 2026-10-19:
   extraction/checkpoints survive retry, and history retains filename/reference/excerpt.
   Original PDF bytes stay in file storage rather than database/checkpoint records.
 - Migration `0004` and Alembic metadata consistency passed against isolated PostgreSQL.
-  The complete suite passed 275 tests, including real bilingual PDF OCR and all four
+  The complete suite passed 275 tests, including real multilingual PDF OCR and all four
   PostgreSQL integration tests. Ruff lint/format, offline lock consistency (217 packages),
   native `start --check`, and Compose configuration validation passed.
 - Built `personal-assistant:pdf-uploads-check`. A read-only non-root smoke container
@@ -210,7 +210,7 @@ Image input integration verified on 2026-10-19:
   injection authorization, archive/checkpoint retry, API auth/validation, Telegram
   ownership/download bounds, profile switching and projector launch arguments.
   The final complete suite passed 264 tests, including four isolated PostgreSQL tests
-  and actual bilingual PDF OCR. Ruff lint/format and the 217-package offline lock check
+  and actual multilingual PDF OCR. Ruff lint/format and the 217-package offline lock check
   passed; the current private native configuration passed `assistant start --check`.
 - Built `personal-assistant:images-check`; a read-only non-root smoke container verified
   the multipart image API, auth, repeated-field rejection, review and cached retries
@@ -228,7 +228,7 @@ PDF MCP integration verified on 2026-10-19:
   the optional PDF extra. Native configuration now enables the managed PDF server;
   `data/pdf` exists and official English/Russian tessdata_fast files are installed
   in `data/tessdata`. Only PDF keys in the private `.env` were updated.
-- Real stdio discovery and calls verified bilingual embedded-text extraction, filename
+- Real stdio discovery and calls verified multilingual embedded-text extraction, filename
   listing, page provenance and read-only allowlisting. Generated synthetic PDFs cover
   traversal/symlink escapes, wrong file type, oversized/encrypted documents, invalid
   page ranges, pagination, excerpt bounds and missing/failed OCR. Upstream import
@@ -244,7 +244,7 @@ PDF MCP integration verified on 2026-10-19:
 - Full suite with `TEST_PDF_TESSDATA_DIRECTORY=data/tessdata`: 234 passed, four
   PostgreSQL integration tests skipped (database code/schema unchanged). Ruff lint,
   formatting and offline lock consistency passed; the lock contains 216 packages.
-- Built `personal-assistant:pdf-check` and verified real text extraction plus bilingual
+- Built `personal-assistant:pdf-check` and verified real text extraction plus multilingual
   scanned OCR inside it as UID 10001, with no network, a read-only root filesystem,
   read-only synthetic PDF/language-data mounts and temporary `/tmp`. Smoke container
   removed itself; local result is `data/pdf-verification.json`.
@@ -332,7 +332,7 @@ Single-command native launcher checked on 2026-10-18:
 Context-budget fix checked on 2026-10-17:
 
 - Reproduced `Request exceeds the context budget; split or shorten the task` for
-  “Какая погода завтра?” with Belgrade configured and populated conversation context.
+  “What is the weather tomorrow?” (translated example) with Belgrade configured and populated conversation context.
   The previous budgeter retained a 400-byte history excerpt plus a marker even when
   the planner instructions, schema, and runtime metadata left less room than that.
 - Optional history now fits the actual serialized space, including Unicode and JSON
@@ -516,7 +516,7 @@ provider fallback, disabled search, and the existing Tavily path.
 A live English query returned five results, including official LangGraph pages.
 The Russian query failed with both worldwide and `ru-ru` regions; the adapter returned
 its explicit failure message. The underlying cause was not identified, so reliable
-bilingual search is not established. Raw public-query reports are stored locally in
+multilingual search is not established. Raw public-query reports are stored locally in
 `data/duckduckgo-smoke.json`. No full Telegram research answer or rebuilt Docker image
 was checked for this integration. Restart the API to load the new provider settings.
 
@@ -563,7 +563,7 @@ Checked on 2026-10-16 on an Apple Silicon Mac.
 | API health, authenticated status, notes endpoint | HTTP 200 |
 | Public webpage extraction from example.com | Passed |
 | Real stdio MCP fixture discovery/call/allowlist | Passed |
-| Qwen inference and bilingual planner evaluation | Passed: 12/12 planner cases with the local UD-Q4_K_M file |
+| Qwen inference and multilingual planner evaluation | Passed: 12/12 planner cases with the local UD-Q4_K_M file |
 | Live note/fact persistence, replay, cross-thread recall, and summary review | Passed against an isolated PostgreSQL database |
 | BGE-M3 retrieval quality | Not run: weights not downloaded; vector plumbing tested with synthetic vectors |
 | Telegram account integration and reminder delivery | Not run: bot credentials not configured |
@@ -576,6 +576,6 @@ context compaction without dropping archive text, input limits, authentication,
 Telegram owner checks, public-network restrictions, MCP allowlists, and reminder claims.
 
 Most automated tests use controlled model outputs. Additional live Qwen checks now
-cover a small bilingual planner suite and synthetic note/memory workflows; they are
+cover a small multilingual planner suite and synthetic note/memory workflows; they are
 not a general accuracy or safety benchmark. See [local model validation](model-validation.md)
 for the exact artifact, measured timings, initial failures, and resulting fixes.
