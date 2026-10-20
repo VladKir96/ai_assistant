@@ -1,0 +1,16 @@
+.git
+.env
+.env.*
+.venv
+env
+__pycache__
+.pytest_cache
+.ruff_cache
+data
+backups
+models
+tests
+*.gguf
+*.onnx
+*.db
+

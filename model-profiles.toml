@@ -1,0 +1,43 @@
+# Non-secret model presets. Run `assistant models --use qwen-local` to activate one.
+# File paths are relative to the project directory. Credentials stay in .env.
+
+[profiles.qwen-local]
+model_provider = "local"
+local_model = "Qwen3.8-27B-UD-Q4_K_M"
+local_model_file = "models/Qwen3.8-27B-GGUF/Qwen3.8-27B-UD-Q4_K_M.gguf"
+context_window = 16384
+max_output_tokens = 2048
+request_timeout_seconds = 180
+enable_thinking = false
+model_supports_images = false
+
+# Copy this example and replace the model name/file with your downloaded GGUF.
+# Use a context size supported by that model and your available memory.
+# [profiles.another-local]
+# model_provider = "local"
+# local_model = "another-model"
+# local_model_file = "models/another-model/model.gguf"
+# context_window = 16384
+# max_output_tokens = 2048
+# enable_thinking = false
+
+# Local vision preset: use a supported vision-language model and its matching projector.
+# Both files must already be downloaded. Do not combine unrelated models/projectors.
+# [profiles.local-vision]
+# model_provider = "local"
+# local_model = "YOUR_VISION_MODEL_ALIAS"
+# local_model_file = "models/vision/model.gguf"
+# local_mmproj_file = "models/vision/mmproj.gguf"
+# model_supports_images = true
+# vision_token_reserve = 4096
+# context_window = 16384
+# max_output_tokens = 2048
+
+# Set ASSISTANT_OPENAI_API_KEY in .env before selecting a cloud profile.
+# The chosen model must support the Responses API and JSON-schema output.
+# [profiles.cloud]
+# model_provider = "openai"
+# openai_model = "YOUR_MODEL_ID"
+# context_window = 16384
+# max_output_tokens = 2048
+# model_supports_images = true # Only if the chosen hosted model accepts images.

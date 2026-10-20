@@ -1,0 +1,170 @@
+name: personal-assistant
+
+x-app: &app
+  build: .
+  env_file: .env
+  environment: &environment
+    ASSISTANT_DATABASE_URL: postgresql+psycopg://assistant:${ASSISTANT_POSTGRES_PASSWORD:?Run assistant init}@postgres:5432/assistant
+    ASSISTANT_REDIS_URL: redis://redis:6379/0
+    ASSISTANT_API_URL: http://api:8000
+    ASSISTANT_LOCAL_BASE_URL: http://host.docker.internal:8080/v1
+    ASSISTANT_EMBEDDING_BASE_URL: http://host.docker.internal:8081/v1
+    ASSISTANT_SPEECH_BASE_URL: http://host.docker.internal:8765
+    ASSISTANT_PDF_DIRECTORY: /app/data/pdf
+    ASSISTANT_PDF_UPLOAD_DIRECTORY: /app/data/pdf-uploads
+    ASSISTANT_PDF_TESSDATA_DIRECTORY: /app/data/tessdata
+    ASSISTANT_PYTHON_RUNNER_URL: http://python-runner:8766
+    ASSISTANT_ARTIFACT_DIRECTORY: /app/data/artifacts
+  volumes:
+    - ./data/pdf:/app/data/pdf:ro
+    - ./data/tessdata:/app/data/tessdata:ro
+    - pdf-uploads:/app/data/pdf-uploads
+    - artifacts:/app/data/artifacts
+  extra_hosts:
+    - host.docker.internal:host-gateway
+  restart: unless-stopped
+
+services:
+  python-runner:
+    profiles: [analysis]
+    build: .
+    user: "0:0"
+    command: [assistant, python-runner, --host, "0.0.0.0", --port, "8766"]
+    environment:
+      ASSISTANT_API_TOKEN: ${ASSISTANT_API_TOKEN:?Run assistant init}
+      ASSISTANT_PYTHON_RUNNER_TOKEN: ${ASSISTANT_PYTHON_RUNNER_TOKEN:-}
+      ASSISTANT_PYTHON_WORKER_IMAGE: ${ASSISTANT_PYTHON_WORKER_IMAGE:-personal-assistant-python:local}
+    volumes:
+      # Trusted broker only. Worker containers never receive this socket or host mounts.
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [python-control]
+    read_only: true
+    tmpfs: [/tmp:size=16m]
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 256m
+    pids_limit: 64
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8766/health')"]
+      interval: 10s
+      timeout: 8s
+      retries: 10
+
+  postgres:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: assistant
+      POSTGRES_DB: assistant
+      POSTGRES_PASSWORD: ${ASSISTANT_POSTGRES_PASSWORD:?Run assistant init}
+    ports:
+      - 127.0.0.1:5432:5432
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U assistant -d assistant]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, "yes"]
+    ports:
+      - 127.0.0.1:6379:6379
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    <<: *app
+    command: [assistant, migrate]
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    <<: *app
+    networks: [default, python-control]
+    ports:
+      - 127.0.0.1:8000:8000
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  bot:
+    <<: *app
+    profiles: [telegram]
+    command: [assistant, bot]
+    depends_on:
+      api:
+        condition: service_healthy
+
+  worker:
+    <<: *app
+    profiles: [reminders]
+    command: [celery, -A, personal_assistant.jobs:celery_app, worker, --loglevel=INFO, --concurrency=1]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    <<: *app
+    profiles: [reminders]
+    command: [celery, -A, personal_assistant.jobs:celery_app, beat, --loglevel=INFO, --schedule=/tmp/celerybeat]
+    depends_on:
+      worker:
+        condition: service_started
+
+  llama:
+    profiles: [linux-inference]
+    image: ghcr.io/ggml-org/llama.cpp:server
+    environment:
+      LLAMA_API_KEY: ${ASSISTANT_LOCAL_API_KEY:-}
+    volumes:
+      - type: bind
+        source: ${ASSISTANT_LOCAL_MODEL_FILE:-./models/Qwen3.8-27B-Q4_K_M.gguf}
+        target: /models/model.gguf
+        read_only: true
+        bind:
+          create_host_path: false
+    ports:
+      - 127.0.0.1:8080:8080
+    command:
+      - -m
+      - /models/model.gguf
+      - --alias
+      - ${ASSISTANT_LOCAL_MODEL:-Qwen3.8-27B-Q4_K_M}
+      - --host
+      - 0.0.0.0
+      - -c
+      - "${ASSISTANT_CONTEXT_WINDOW:-16384}"
+      - --parallel
+      - "1"
+      - --jinja
+    restart: unless-stopped
+
+volumes:
+  artifacts:
+  pdf-uploads:
+  postgres-data:
+  redis-data:
+
+networks:
+  python-control:
+    internal: true
+

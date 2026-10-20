@@ -1,0 +1,13 @@
+FROM python:3.12-slim
+ENV UV_LINK_MODE=copy PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /opt/worker
+RUN pip install --no-cache-dir uv==0.11.15
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --only-group python-worker
+ENV PATH="/opt/worker/.venv/bin:$PATH" MPLBACKEND=Agg MPLCONFIGDIR=/tmp/matplotlib \
+    OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1
+RUN mkdir /work
+WORKDIR /work
+# Trusted PID 1 is root without capabilities; generated code executes as UID 65534.
+# This watchdog also bounds orphan jobs if the broker stops unexpectedly.
+CMD ["python", "-I", "-c", "import time; time.sleep(60)"]

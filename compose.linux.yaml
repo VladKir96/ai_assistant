@@ -1,0 +1,5 @@
+# Use together with compose.yaml and --profile linux-inference on a Linux host.
+services:
+  api:
+    environment:
+      ASSISTANT_LOCAL_BASE_URL: http://llama:8080/v1

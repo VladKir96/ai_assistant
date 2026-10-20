@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "personal-assistant"
+version = "0.1.0"
+description = "A private, bilingual LangGraph assistant with Telegram, durable memory, and local inference."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+  "aiogram>=3.20,<4",
+  "alembic>=1.15,<2",
+  "celery[redis]>=5.5,<6",
+  "ddgs>=9.16,<10",
+  "fastapi>=0.115,<1",
+  "httpx>=0.28,<1",
+  "icalendar>=6,<8",
+  "langfuse>=5.0.2,<6",
+  "langgraph>=1.0,<2",
+  "langgraph-checkpoint-postgres>=3,<4",
+  "pgvector>=0.4,<1",
+  "pillow>=11,<13",
+  "psycopg[binary,pool]>=3.2,<4",
+  "pydantic-settings>=2.8,<3",
+  "python-multipart>=0.0.20,<1",
+  "sqlalchemy[asyncio]>=2.0.40,<3",
+  "trafilatura>=2,<3",
+  "uvicorn[standard]>=0.34,<1",
+]
+
+[project.optional-dependencies]
+speech = ["faster-whisper>=1.2,<2"]
+embeddings = ["sentence-transformers>=4,<6"]
+mcp = ["mcp>=1.12,<2"]
+pdf = ["mcp-pdf-reader==0.1.7", "fastmcp>=2.10.5,<3", "pymupdf>=1.26.3,<2"]
+python-runner = ["docker>=7.1,<8"]
+dev = [
+  "aiosqlite>=0.21,<1",
+  "langgraph-checkpoint-sqlite>=3,<4",
+  "pytest>=8.3,<10",
+  "pytest-asyncio>=0.26,<2",
+  "ruff>=0.11,<1",
+]
+
+[dependency-groups]
+python-worker = ["numpy>=2,<3", "matplotlib>=3.10,<4"]
+
+[project.scripts]
+assistant = "personal_assistant.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/personal_assistant"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+

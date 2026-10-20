@@ -1,0 +1,66 @@
+name: checks
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        extras: ["", "--extra speech"]
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: assistant
+          POSTGRES_PASSWORD: testing-only
+          POSTGRES_DB: assistant_test
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U assistant" --health-interval 5s --health-retries 20
+    env:
+      ASSISTANT_DATABASE_URL: postgresql+psycopg://assistant:testing-only@localhost:5432/assistant_test
+      TEST_POSTGRES_URL: postgresql+psycopg://assistant:testing-only@localhost:5432/assistant_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.11.15"
+          python-version: "3.12"
+      - run: uv sync --frozen --extra dev --extra mcp --extra pdf --extra python-runner ${{ matrix.extras }}
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run assistant migrate
+      - run: uv run alembic check
+      - run: uv run pytest
+      - name: Build isolated Python worker
+        if: matrix.extras == ''
+        timeout-minutes: 10
+        run: docker build -f Dockerfile.python -t personal-assistant-python:local .
+      - name: Verify real Python execution and isolation
+        if: matrix.extras == ''
+        timeout-minutes: 5
+        env:
+          TEST_PYTHON_DOCKER: "1"
+        run: uv run pytest -q tests/test_python_analysis.py -k real_docker
+      - run: uv run assistant demo
+      - name: Build deployment image
+        if: matrix.extras == ''
+        timeout-minutes: 10
+        run: docker build -t assistant-ci .
+      - name: Start deployment image against test PostgreSQL
+        if: matrix.extras == ''
+        run: >-
+          docker run -d --rm --name assistant-smoke --network host
+          -e ASSISTANT_DATABASE_URL
+          -e ASSISTANT_API_TOKEN=ci-only-application-token-at-least-32-characters
+          assistant-ci assistant api --port 18000
+      - name: Check deployed API health and authentication
+        if: matrix.extras == ''
+        run: |
+          curl --fail --retry 30 --retry-connrefused --retry-delay 1 --max-time 2 http://127.0.0.1:18000/health
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18000/v1/status)" = 401
+          curl --fail -H 'Authorization: Bearer ci-only-application-token-at-least-32-characters' http://127.0.0.1:18000/v1/status
+      - name: Deployment logs and cleanup
+        if: always() && matrix.extras == ''
+        run: |
+          docker logs assistant-smoke || true
+          docker rm -f assistant-smoke || true
+

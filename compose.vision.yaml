@@ -1,0 +1,12 @@
+# Optional Linux llama.cpp vision projector. Use with compose.yaml + compose.linux.yaml.
+services:
+  llama:
+    environment:
+      LLAMA_ARG_MMPROJ: /models/mmproj.gguf
+    volumes:
+      - type: bind
+        source: ${ASSISTANT_LOCAL_MMPROJ_FILE:?Set the matching vision projector path}
+        target: /models/mmproj.gguf
+        read_only: true
+        bind:
+          create_host_path: false
