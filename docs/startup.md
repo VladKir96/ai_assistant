@@ -1,5 +1,9 @@
 # Start the assistant on an Apple Silicon Mac
 
+For Linux or Windows/WSL 2, use the [Docker setup guide](docker.md). It runs the
+application and local CPU inference in containers and does not require a Mac,
+host Python, or a native llama.cpp executable.
+
 Use this guide for the default setup: PostgreSQL in Docker Desktop, with Qwen,
 the assistant API, and the Telegram bot running directly on your Mac. Start with
 text messages; add speech, semantic search, and reminders after text chat works.
@@ -42,7 +46,8 @@ The launcher:
 2. Opens Docker Desktop on macOS when necessary and waits for the engine.
 3. Starts/waits for PostgreSQL and applies application and LangGraph migrations.
 4. Starts native inference for a local model profile; hosted profiles skip this process.
-5. Starts speech when `VOICE_ENABLED=true` and embeddings when `EMBEDDING_BACKEND=http`.
+5. Starts speech when `VOICE_ENABLED=true` or `VOICE_OUTPUT_ENABLED=true`, and embeddings
+   when `EMBEDDING_BACKEND=http`.
 6. Checks the complete planner context against the running model before starting the
    API (`assistant check-context`), including its schema, clock, and available MCP tools.
 7. Waits for each HTTP service, including authenticated API/database readiness, then
@@ -407,7 +412,7 @@ or closing a terminal does not automatically launch the dependent services.
 | --- | --- | --- |
 | Semantic memory/RAG | Install embeddings extra, configure HTTP embeddings, then reindex | Local embeddings companion on port 8081, plus the base stack |
 | Voice input | Install the speech extra and download faster-whisper; configure CPU/INT8 and enable voice | Speech companion on port 8765 and restarted bot; text replies work without TTS |
-| Voice output | Install FFmpeg/Piper and configured voices; enable voice output | Speech companion plus bot with `ASSISTANT_VOICE_OUTPUT_ENABLED=true` |
+| Voice output | Follow [Piper setup](voice.md): install `--extra tts` and FFmpeg; configure voice/config files | Start with `--extra tts`, set `ASSISTANT_VOICE_OUTPUT_ENABLED=true`, then `/audio on`; language is automatic |
 | PDF reading/uploads | Install the PDF extra, create `data/pdf`, enable PDF in `.env`; OCR needs language files | Managed stdio server; uploads accepted as Telegram documents; [setup](pdf.md) |
 | Image understanding | Select a vision-capable model/profile; local inference needs its matching mmproj | Existing model service; [setup](images.md) |
 | Reminder delivery | Configure Telegram owner, Redis, and reminder scheduling | Redis, Celery worker, and Celery Beat scheduler |

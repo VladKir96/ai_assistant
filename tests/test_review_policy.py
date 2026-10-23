@@ -1,5 +1,5 @@
-from personal_assistant.graph import Draft
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import Draft
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
 from tests.conftest import ScriptedModel
 
 

@@ -3,10 +3,10 @@ import json
 import pytest
 from pydantic import SecretStr
 
-from personal_assistant.config import Settings
-from personal_assistant.graph import Draft
-from personal_assistant.research import web_capabilities
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import Draft
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.integrations.research import web_capabilities
 from tests.conftest import ScriptedModel
 
 

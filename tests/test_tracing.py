@@ -9,12 +9,12 @@ import pytest_asyncio
 from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
 from pydantic import ValidationError
 
-from personal_assistant.api import create_app
-from personal_assistant.config import Settings
-from personal_assistant.graph import Draft
-from personal_assistant.llm import HTTPModel, ModelError
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.tracing import CONTENT_LIMIT, Tracing, check_tracing
+from personal_assistant.agent.graph import Draft
+from personal_assistant.app.api import create_app
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.core.tracing import CONTENT_LIMIT, Tracing, check_tracing
+from personal_assistant.inference.llm import HTTPModel, ModelError
 from tests.conftest import ScriptedModel
 
 
@@ -339,7 +339,7 @@ async def test_span_update_and_exit_failure_preserve_application_exception(caplo
 
 
 async def test_tool_failure_is_visible_without_capturing_error_text(harness, tracing):
-    from personal_assistant.tool_execution import ToolExecutor
+    from personal_assistant.agent.tool_execution import ToolExecutor
 
     tracer, exporter = tracing
     executor = ToolExecutor(harness.repository, None, None, None, tracing=tracer)
@@ -357,7 +357,7 @@ async def test_tool_failure_is_visible_without_capturing_error_text(harness, tra
 async def test_connection_check_flushes_synthetic_trace_and_closes(monkeypatch, authenticated):
     from contextlib import nullcontext
 
-    from personal_assistant import tracing as module
+    from personal_assistant.core import tracing as module
 
     calls = []
 

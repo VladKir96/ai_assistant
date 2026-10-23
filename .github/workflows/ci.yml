@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        extras: ["", "--extra speech"]
+        extras: ["", "--extra speech --extra tts"]
     services:
       postgres:
         image: pgvector/pgvector:pg17

@@ -7,13 +7,13 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from personal_assistant import weather as module
-from personal_assistant.config import Settings
-from personal_assistant.graph import PLANNER, AssistantGraph, Draft
-from personal_assistant.llm import fit_payload
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.time_utils import with_runtime_clock
-from personal_assistant.weather import CURRENT, DAILY, HOURLY, LICENSE, Weather
+from personal_assistant.agent.graph import PLANNER, AssistantGraph, Draft
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.core.time_utils import with_runtime_clock
+from personal_assistant.inference.llm import fit_payload
+from personal_assistant.integrations import weather as module
+from personal_assistant.integrations.weather import CURRENT, DAILY, HOURLY, LICENSE, Weather
 from tests.conftest import ScriptedModel
 
 REFERENCE = datetime(2026, 10, 17, 10, tzinfo=UTC)
@@ -347,7 +347,7 @@ async def test_weather_enters_review_preserves_evidence_and_appends_attribution(
     # Match the fixture forecast dates while using the graph's normal captured clock.
     from unittest.mock import patch
 
-    import personal_assistant.graph as graph_module
+    import personal_assistant.agent.graph as graph_module
 
     with patch.object(graph_module, "clock_context", wraps=graph_module.clock_context) as clock:
         reference_clock = graph_module.clock_context("Europe/Belgrade", REFERENCE)

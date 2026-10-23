@@ -2,7 +2,7 @@ import sys
 
 import pytest
 
-from personal_assistant import bot, cli
+from personal_assistant.app import bot, cli
 
 
 @pytest.mark.parametrize(

@@ -2,10 +2,10 @@ import pytest
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from sqlalchemy import func, select
 
-from personal_assistant.graph import Draft
-from personal_assistant.llm import ModelError
-from personal_assistant.models import Message, Operation
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import Draft
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.inference.llm import ModelError
+from personal_assistant.storage.models import Message, Operation
 from tests.conftest import ScriptedModel
 
 

@@ -4,11 +4,11 @@ import socket
 import httpx
 import pytest
 
-from personal_assistant.api import create_app
-from personal_assistant.config import Settings
-from personal_assistant.graph import Draft
-from personal_assistant.llm import ContextLimitError, HTTPModel
-from personal_assistant.research import PublicResolver, on_site, public_url
+from personal_assistant.agent.graph import Draft
+from personal_assistant.app.api import create_app
+from personal_assistant.core.config import Settings
+from personal_assistant.inference.llm import ContextLimitError, HTTPModel
+from personal_assistant.integrations.research import PublicResolver, on_site, public_url
 from tests.conftest import ScriptedModel
 
 

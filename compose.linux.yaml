@@ -1,5 +1,17 @@
-# Use together with compose.yaml and --profile linux-inference on a Linux host.
+# Container-only CPU inference on Linux or Windows/WSL 2. See docs/docker.md.
+# Use together with compose.yaml and --profile linux-inference.
 services:
   api:
     environment:
       ASSISTANT_LOCAL_BASE_URL: http://llama:8080/v1
+    depends_on:
+      llama:
+        condition: service_healthy
+
+  llama:
+    healthcheck:
+      test: [CMD, curl, --fail, --silent, http://127.0.0.1:8080/health]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 30s

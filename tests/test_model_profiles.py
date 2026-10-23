@@ -2,8 +2,8 @@ import stat
 
 import pytest
 
-from personal_assistant.config import Settings
-from personal_assistant.model_profiles import ProfileError, load_profiles, select_profile
+from personal_assistant.core.config import Settings
+from personal_assistant.inference.model_profiles import ProfileError, load_profiles, select_profile
 
 
 @pytest.fixture

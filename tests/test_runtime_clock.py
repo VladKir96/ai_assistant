@@ -6,12 +6,13 @@ import pytest
 from aiogram.types import Update
 from pydantic import SecretStr
 
-from personal_assistant import bot, time_utils
-from personal_assistant.api import create_app
-from personal_assistant.graph import PLANNER, Draft
-from personal_assistant.llm import HTTPModel, fit_payload
-from personal_assistant.schemas import ChatRequest, Plan
-from personal_assistant.time_utils import clock_context, with_runtime_clock
+from personal_assistant.agent.graph import PLANNER, Draft
+from personal_assistant.app import bot
+from personal_assistant.app.api import create_app
+from personal_assistant.core import time_utils
+from personal_assistant.core.schemas import ChatRequest, Plan
+from personal_assistant.core.time_utils import clock_context, with_runtime_clock
+from personal_assistant.inference.llm import HTTPModel, fit_payload
 from tests.conftest import ScriptedModel
 
 

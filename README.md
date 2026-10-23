@@ -2,7 +2,8 @@
 
 A private multilingual assistant built with Python, LangGraph, Telegram, and
 PostgreSQL/pgvector. Default local inference is **Qwen3.8-27B Q4_K_M** through
-llama.cpp, with a native Metal backend on an Apple Silicon Mac.
+llama.cpp. Run the application and CPU inference in Docker on Linux or Windows/WSL 2,
+or use native Metal inference on an Apple Silicon Mac. Hosted inference is optional.
 
 This first working iteration includes supervisor routing, five specialist nodes,
 conditional response review, persistent notes/facts/tasks/calendar events, conversation compaction,
@@ -114,6 +115,18 @@ uv run assistant demo
 The demo uses a temporary SQLite database and deterministic responses to exercise the
 actual LangGraph workflow, note persistence, retrieval, and duplicate protection.
 It makes no network calls and leaves no personal data or services behind.
+
+## Choose a setup
+
+| System | Setup guide |
+| --- | --- |
+| Linux or Windows with WSL 2 | [Run the full text stack in Docker](docs/docker.md), including local inference, PostgreSQL, Redis, API, and optional Telegram |
+| A server using hosted inference | [Docker with a hosted model](docs/docker.md#option-b-hosted-model-application-entirely-in-docker), without local model weights or a GPU |
+| Apple Silicon Mac with native Metal inference | [Native startup guide](docs/startup.md) |
+
+The Docker guide starts from a fresh checkout and needs no host Python, uv, or
+llama.cpp installation. It covers credentials, model configuration, health/chat checks,
+Telegram, optional features, updates, logs, and persistent data.
 
 ## Start on your Mac
 
@@ -263,7 +276,8 @@ uv run assistant bot
 
 `/id` returns the sender's own ID in a private chat. All assistant commands and data
 require the configured owner's private chat. Commands: `/start`, `/help`, `/new`,
-`/notes`, `/tasks`, `/export`, `/agenda` (next seven days), `/calendar` (ICS export).
+`/notes`, `/tasks`, `/export`, `/agenda` (next seven days), `/calendar` (ICS export),
+`/time`, and `/audio on|off|status` (optional [Piper output](docs/voice.md)).
 The assistant supports multilingual free-form requests. `/new` starts a conversation
 while retaining notes/facts; the bot's currently selected thread
 is process-local and resets to its default thread after a bot restart.
@@ -499,14 +513,14 @@ Reminder delivery requires Telegram configuration plus Redis, one worker, and on
 
 ```sh
 docker compose up -d --wait redis
-uv run celery -A personal_assistant.jobs:celery_app worker --pool=solo --loglevel=INFO
+uv run celery -A personal_assistant.app.jobs:celery_app worker --pool=solo --loglevel=INFO
 ```
 
 In another terminal:
 
 ```sh
 mkdir -p data
-uv run celery -A personal_assistant.jobs:celery_app beat --loglevel=INFO --schedule=data/celerybeat
+uv run celery -A personal_assistant.app.jobs:celery_app beat --loglevel=INFO --schedule=data/celerybeat
 ```
 
 Tasks persist while processes are stopped; reminders are delivered only when the required
@@ -562,7 +576,7 @@ ASSISTANT_SPEECH_BASE_URL=http://localhost:8765
 On Apple Silicon, use CPU/INT8: CTranslate2 supports ARM64 CPUs and NVIDIA CUDA GPUs,
 [not Apple Metal/MPS](https://opennmt.net/CTranslate2/hardware_support.html).
 The model's name does not establish that it is faster than whisper.cpp/Metal on a Mac.
-`auto` detects the input language; `en` or `ru` can fix it explicitly. Audio is transcribed
+`auto` detects the input language; `en`, `ru`, or `sr` can fix it explicitly. Audio is transcribed
 in its original language. Runtime uses local files only; it never downloads replacement
 weights or sends audio to a cloud recognition service. ONNX Runtime telemetry is disabled.
 
@@ -596,11 +610,12 @@ in `assistant-model.json`. These models are separate from chat-model GGUFs and w
 weights. To use whisper.cpp, set `ASSISTANT_STT_BACKEND=whisper_cpp` and configure
 `ASSISTANT_WHISPER_EXECUTABLE` / `ASSISTANT_WHISPER_MODEL`; this backend needs FFmpeg.
 
-For optional audio replies, install [Piper](https://github.com/OHF-Voice/piper1-gpl) and
-FFmpeg, download Piper voices for the configured `en`/`ru` speech outputs with their
-matching `.onnx.json` files, configure their existing settings, and set
-`ASSISTANT_VOICE_OUTPUT_ENABLED=true`.
-TTS reads the first 1,500 characters and labels partial audio. Faster-whisper input alone
+For optional audio replies, follow the [Piper setup and Telegram audio guide](docs/voice.md).
+Use `/audio on`, `/audio off`, and `/audio status`. The chat preference survives restarts
+and `/new`. Language detection is always automatic for English, Russian, and Serbian
+(Latin and Cyrillic), based on the assistant's answer. Text arrives first; a bounded
+background queue sends Ogg/Opus audio. Output works independently of voice input.
+TTS reads up to 1,500 cleaned characters and labels partial audio. Faster-whisper input alone
 needs neither Piper, whisper-cli, nor a system FFmpeg executable; PyAV decodes the audio.
 
 The companion is HTTP-based, so a Docker bot can use the native Mac service: start speech
@@ -699,10 +714,14 @@ from the assistant; it can be cloud-hosted or self-hosted.
 
 ## Docker deployment
 
-This is an alternative to the native API/bot startup above. Stop any native API or
-bot before starting its container, and use a single inference server. Complete the
-same `.env`, model, and Telegram identity setup first. Open Docker Desktop and wait
-until `docker info` succeeds.
+**For Linux or Windows/WSL 2, follow the standalone [Docker setup guide](docs/docker.md).**
+It runs local inference and the application services in containers, with no Mac or
+native model process. It also covers using a hosted model instead of local inference.
+
+The commands below cover the alternative Mac arrangement: API/bot in Docker with
+native Metal inference on the host. Stop any native API or bot first, and use a
+single inference server. Complete the [Mac configuration](docs/startup.md) and
+Telegram identity setup, then start Docker Desktop and confirm `docker info` succeeds.
 
 Keep native Metal inference in its own terminal, using the configured model path:
 
@@ -739,15 +758,9 @@ native speech/embeddings with containerized clients, likewise start their compan
 with `--host 0.0.0.0`; their endpoints require the application token. Default published
 database/API/Redis ports bind only to localhost.
 
-For a portable **CPU inference** Linux deployment:
-
-```sh
-docker compose -f compose.yaml -f compose.linux.yaml --profile linux-inference up -d --build
-```
-
-Set `ASSISTANT_LOCAL_MODEL_FILE` to your GGUF path. This profile does not enable CUDA;
-GPU Linux deployment needs a corresponding llama.cpp image/device configuration.
-Ordinary Linux containers on macOS do not provide direct Metal access.
+For containerized CPU inference, use the configuration and readiness checks in the
+[Docker guide](docs/docker.md#option-a-local-model-entirely-in-docker). Ordinary
+Linux containers on macOS do not provide direct Metal access.
 
 Stop services with `docker compose stop`; persistent database volumes remain intact.
 Use one API process. Configuration is loaded at process startup. After editing `.env`,

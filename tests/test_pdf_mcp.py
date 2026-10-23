@@ -5,10 +5,10 @@ from pathlib import Path
 
 import pytest
 
-from personal_assistant.graph import Draft
-from personal_assistant.mcp_tools import MCPTools
-from personal_assistant.pdf_mcp import MAX_FILE_BYTES, PDFReader
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import Draft
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.integrations.mcp_tools import MCPTools
+from personal_assistant.media.pdf_mcp import MAX_FILE_BYTES, PDFReader
 from tests.conftest import ScriptedModel
 
 pymupdf = pytest.importorskip("pymupdf")

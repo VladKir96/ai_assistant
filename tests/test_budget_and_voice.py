@@ -5,11 +5,11 @@ from pathlib import Path
 import httpx
 import pytest
 
-from personal_assistant.graph import PLANNER, AssistantGraph
-from personal_assistant.llm import ContextLimitError, HTTPModel, fit_payload, prompt_json
-from personal_assistant.schemas import Plan
-from personal_assistant.time_utils import clock_context
-from personal_assistant.voice import create_speech_app
+from personal_assistant.agent.graph import PLANNER, AssistantGraph
+from personal_assistant.core.schemas import Plan
+from personal_assistant.core.time_utils import clock_context
+from personal_assistant.inference.llm import ContextLimitError, HTTPModel, fit_payload, prompt_json
+from personal_assistant.media.voice import create_speech_app
 
 
 def test_budget_reduction_preserves_request_and_entire_reviewed_draft():
@@ -111,6 +111,7 @@ async def test_voice_http_contract_with_mock_executables(harness, tmp_path, monk
     whisper, piper = tmp_path / "whisper.bin", tmp_path / "russian.onnx"
     whisper.touch()
     piper.touch()
+    Path(str(piper) + ".json").write_text("{}")  # noqa: ASYNC240
     settings = harness.settings.model_copy(
         update={
             "whisper_model": str(whisper),
@@ -128,7 +129,8 @@ async def test_voice_http_contract_with_mock_executables(harness, tmp_path, monk
         elif args[-1].endswith(".ogg"):
             Path(args[-1]).write_bytes(b"synthetic-ogg")  # noqa: ASYNC240
 
-    monkeypatch.setattr("personal_assistant.voice.command", fake_command)
+    monkeypatch.setattr("personal_assistant.media.voice.command", fake_command)
+    monkeypatch.setattr("personal_assistant.media.voice.detect_language", lambda text: "ru")
     app = create_speech_app(settings)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://voice"
@@ -139,8 +141,8 @@ async def test_voice_http_contract_with_mock_executables(harness, tmp_path, monk
             "/v1/audio/transcriptions", files={"file": ("in.ogg", b"audio")}
         )
         assert response.json()["text"].startswith("Запомни")
-        response = await client.post("/v1/audio/speech", json={"text": "Привет", "language": "ru"})
+        response = await client.post("/v1/audio/speech", json={"text": "Привет"})
         assert response.content == b"synthetic-ogg"
         assert response.headers["content-type"] == "audio/ogg"
     assert any("auto" in args for args, _ in calls)
-    assert any(str(piper) in args and stdin == "Привет".encode() for args, stdin in calls)
+    assert any(str(piper) in args and stdin == "Привет\n".encode() for args, stdin in calls)

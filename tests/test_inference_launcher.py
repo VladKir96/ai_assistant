@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from personal_assistant import cli
+from personal_assistant.app import cli
 
 
 @pytest.mark.parametrize("explicit_override", [False, True])

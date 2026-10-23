@@ -10,8 +10,9 @@ import pytest
 from aiogram.types import Update
 from pydantic import SecretStr
 
-from personal_assistant import bot, stt
-from personal_assistant.voice import create_speech_app
+from personal_assistant.app import bot
+from personal_assistant.media import stt
+from personal_assistant.media.voice import create_speech_app
 
 
 def model_directory(tmp_path):
@@ -37,6 +38,7 @@ async def test_offline_model_cached_and_lazy_inference_runs_off_event_loop(
         update={
             "stt_backend": "faster_whisper",
             "faster_whisper_model": str(model_directory(tmp_path)),
+            "voice_enabled": True,
         }
     )
     main_thread, loads, calls, telemetry = threading.get_ident(), [], [], []

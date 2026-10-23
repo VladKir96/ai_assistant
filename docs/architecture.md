@@ -13,6 +13,25 @@ prevents concurrent launchers; child failure or interruption stops the owned nat
 process groups. PostgreSQL remains Docker-managed. See [startup](startup.md) for usage
 and the scope of configuration/readiness checks.
 
+## Package layout
+
+Modules under `src/personal_assistant` are grouped by responsibility:
+
+| Package | Contents |
+| --- | --- |
+| `app` | API, Telegram, CLI, startup, runtime wiring, jobs, demo, and evaluation |
+| `agent` | Planning graph, conversation context, service, tools, and authorization |
+| `core` | Settings, schemas, time utilities, HTTP guards, and tracing |
+| `storage` | Database, ORM models, repositories, calendar storage, and artifacts |
+| `integrations` | Web research, weather, MCP clients, and sandboxed Python analysis |
+| `inference` | Model clients, profiles, context capacity checks, and embedding server |
+| `media` | Images, vision, PDFs, speech recognition, and speech synthesis |
+
+The package root contains only package initialization and the
+`python -m personal_assistant` entry point. CLI commands remain unchanged. Direct module
+references use the subpackage path, such as
+`personal_assistant.app.jobs:celery_app` for Celery.
+
 ## Request execution
 
 1. Authenticate the API request; Telegram separately checks both sender and private chat ID.
@@ -66,10 +85,10 @@ still serializes generations; network/tools can overlap independently. Higher mo
 concurrency requires a server with adequate slots/context/memory. These limits apply
 inside one owner's request; multiple API processes are still unsupported.
 
-`tools.py` is the shared registry for action names, allowed/required parameters,
+`agent/tools.py` is the shared registry for action names, allowed/required parameters,
 mutation classification, and role permissions. Pydantic validates parameter types;
 the executor rejects missing required or unrelated parameters. Tool handlers live in
-`tool_execution.py`. Destructive writes require an independent standalone command
+`agent/tool_execution.py`. Destructive writes require an independent standalone command
 bound to one UUID: `/delete_note`, `/forget`, or `/cancel_event`. Negation, quotations,
 hypotheticals, and discussion do not match that command grammar.
 
@@ -312,7 +331,7 @@ PyAV decodes/resamples input to mono 16 kHz with a hard three-minute sample limi
 compressed uploads are additionally capped at 10 MB. Recognition/VAD runs in a worker
 thread under the companion's lock, including lazy segment iteration, so native inference
 does not block its async event loop. Automatic language detection preserves the spoken
-language; fixed `en`/`ru` recognition can also be selected.
+language; fixed `en`/`ru`/`sr` recognition can also be selected.
 
 On this Mac, faster-whisper uses CPU/INT8; CTranslate2 does not expose Metal/MPS.
 The optional `speech` dependency group is excluded from the default app Docker image;
@@ -320,6 +339,22 @@ containerized bots can access a native companion through the existing speech URL
 Voice input and audio replies have separate switches. Text replies work without Piper;
 enabling audio replies also requires Piper voices and FFmpeg. The whisper.cpp backend
 remains available with its existing executable/model settings.
+
+Piper output uses a separate `tts` dependency group and runs independently of voice
+input. `/audio on|off|status` controls a PostgreSQL chat preference keyed by the owner's
+Telegram ID, outside LangGraph conversation state. The bot sends reviewed text first,
+then submits cleaned prose to one background audio worker with three waiting slots.
+Cancellation discards queued audio and closes the current speech request; the speech
+server watches for disconnects, cancels synthesis, and kills/reaps child processes.
+There is no extra reasoning agent or LLM call for speech.
+
+The companion uses offline statistical language detection on the answer to select an
+English, Russian, or Serbian Piper voice. Serbian Cyrillic and Latin scripts share
+the Serbian route; Latin detection includes Lingua's Bosnian/Croatian models. One
+predominant language is selected per reply. TTS and STT have separate locks. Each Piper
+invocation loads its voice, then FFmpeg converts its WAV output to Telegram Ogg/Opus.
+Audio reads at most 1,500 cleaned characters; a caption marks shortened output. See
+[voice setup and limits](voice.md).
 
 ## Reminders and delivery
 

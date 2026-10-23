@@ -115,7 +115,7 @@ services:
   worker:
     <<: *app
     profiles: [reminders]
-    command: [celery, -A, personal_assistant.jobs:celery_app, worker, --loglevel=INFO, --concurrency=1]
+    command: [celery, -A, personal_assistant.app.jobs:celery_app, worker, --loglevel=INFO, --concurrency=1]
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -125,7 +125,7 @@ services:
   scheduler:
     <<: *app
     profiles: [reminders]
-    command: [celery, -A, personal_assistant.jobs:celery_app, beat, --loglevel=INFO, --schedule=/tmp/celerybeat]
+    command: [celery, -A, personal_assistant.app.jobs:celery_app, beat, --loglevel=INFO, --schedule=/tmp/celerybeat]
     depends_on:
       worker:
         condition: service_started

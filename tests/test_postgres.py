@@ -6,18 +6,50 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from sqlalchemy import delete, select
 from sqlalchemy.engine import make_url
 
-from personal_assistant.config import Settings
-from personal_assistant.context import ContextBuilder
-from personal_assistant.database import Database
-from personal_assistant.graph import AssistantGraph, Draft
-from personal_assistant.llm import Embeddings, ModelError
-from personal_assistant.mcp_tools import MCPTools
-from personal_assistant.models import CalendarEvent, Document, Message, Operation, Run
-from personal_assistant.repository import Repository
-from personal_assistant.research import Research
-from personal_assistant.schemas import Action, ChatRequest, Plan
-from personal_assistant.service import AssistantService
+from personal_assistant.agent.context import ContextBuilder
+from personal_assistant.agent.graph import AssistantGraph, Draft
+from personal_assistant.agent.service import AssistantService
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan
+from personal_assistant.inference.llm import Embeddings, ModelError
+from personal_assistant.integrations.mcp_tools import MCPTools
+from personal_assistant.integrations.research import Research
+from personal_assistant.storage.database import Database
+from personal_assistant.storage.models import CalendarEvent, Document, Message, Operation, Run
+from personal_assistant.storage.repository import Repository
 from tests.conftest import ScriptedModel
+
+
+async def test_postgres_audio_preference_upsert_and_restart():
+    import asyncio
+
+    from personal_assistant.storage.models import ChatPreference
+
+    url = os.getenv("TEST_POSTGRES_URL")
+    if not url:
+        pytest.skip("Set TEST_POSTGRES_URL to an isolated migrated PostgreSQL database")
+    if not (make_url(url).database or "").endswith("_test"):
+        pytest.fail("Integration tests require a database name ending in _test")
+    settings = Settings(_env_file=None, database_url=url, embedding_backend="disabled")
+    embeddings, database = Embeddings(settings), Database(url)
+    identifier = f"test:{uuid4()}"
+    try:
+        repository = Repository(database, embeddings)
+        assert not await repository.audio_enabled(identifier)
+        await asyncio.gather(*(repository.set_audio_enabled(identifier, True) for _ in range(3)))
+        await database.close()
+        database = Database(url)
+        repository = Repository(database, embeddings)
+        assert await repository.audio_enabled(identifier)
+        await repository.set_audio_enabled(identifier, False)
+        assert not await repository.audio_enabled(identifier)
+    finally:
+        async with database.sessions.begin() as session:
+            await session.execute(
+                delete(ChatPreference).where(ChatPreference.chat_id == identifier)
+            )
+        await database.close()
+        await embeddings.close()
 
 
 async def test_postgres_reindex_compare_and_swap_with_concurrent_edit():
@@ -43,8 +75,8 @@ async def test_postgres_concurrent_reminder_claims_do_not_overlap():
     import asyncio
     from datetime import timedelta
 
-    from personal_assistant.jobs import claim_due
-    from personal_assistant.models import Task, now
+    from personal_assistant.app.jobs import claim_due
+    from personal_assistant.storage.models import Task, now
 
     url = os.getenv("TEST_POSTGRES_URL")
     if not url:
@@ -73,8 +105,8 @@ async def test_postgres_concurrent_reminder_claims_do_not_overlap():
 async def test_postgres_reminder_exhaustion_preserves_live_claims_and_recovers_expired_ones():
     from datetime import timedelta
 
-    from personal_assistant.jobs import claim_due
-    from personal_assistant.models import Task, now
+    from personal_assistant.app.jobs import claim_due
+    from personal_assistant.storage.models import Task, now
 
     url = os.getenv("TEST_POSTGRES_URL")
     if not url:

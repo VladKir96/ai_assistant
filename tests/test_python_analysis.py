@@ -10,17 +10,21 @@ import httpx
 import pytest
 from PIL import Image
 
-from personal_assistant.api import create_app
-from personal_assistant.artifacts import ArtifactStore
-from personal_assistant.config import Settings
-from personal_assistant.graph import Draft
-from personal_assistant.python_analysis import PythonAnalysis, PythonProgram, runner_token
-from personal_assistant.python_runner import (
+from personal_assistant.agent.graph import Draft
+from personal_assistant.agent.service import AssistantService
+from personal_assistant.app.api import create_app
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.integrations.python_analysis import (
+    PythonAnalysis,
+    PythonProgram,
+    runner_token,
+)
+from personal_assistant.integrations.python_runner import (
     DockerExecutor,
     create_python_runner_app,
 )
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.service import AssistantService
+from personal_assistant.storage.artifacts import ArtifactStore
 from tests.conftest import ScriptedModel
 
 
@@ -31,7 +35,7 @@ def png():
 
 
 def test_single_task_team_syntax_normalizes_without_losing_actions():
-    from personal_assistant.schemas import AgentTask
+    from personal_assistant.core.schemas import AgentTask
 
     action = Action(name="run_python", query="Calculate 2+2")
     plan = Plan(
@@ -149,7 +153,7 @@ async def test_runner_cancellation_does_not_release_live_job_slot(harness):
 
 
 async def test_code_generation_runner_and_png_validation(harness, monkeypatch):
-    from personal_assistant import python_analysis as module
+    from personal_assistant.integrations import python_analysis as module
 
     settings = harness.settings.model_copy(update={"python_enabled": True})
     model = ScriptedModel(PythonProgram(code="print(6*7); plt.hist([1,2,2,3])"))
@@ -200,7 +204,7 @@ async def test_telegram_returns_chart_photos_only_to_owner(harness, monkeypatch)
     from aiogram.types import Update
     from pydantic import SecretStr
 
-    from personal_assistant import bot
+    from personal_assistant.app import bot
 
     identifier = "a" * 64
     requests, replies = [], []
@@ -324,7 +328,7 @@ def test_new_failed_chart_attempt_does_not_serve_stale_images():
 
 
 def test_docker_configuration_has_no_network_host_mounts_or_credentials(monkeypatch):
-    from personal_assistant import python_runner as module
+    from personal_assistant.integrations import python_runner as module
 
     recorded = {}
 
@@ -413,7 +417,7 @@ def test_real_docker_calculation_chart_and_isolation(tmp_path):
     ],
 )
 def test_real_docker_resource_errors_are_bounded_and_cleaned(monkeypatch, code, message):
-    from personal_assistant import python_runner as module
+    from personal_assistant.integrations import python_runner as module
 
     monkeypatch.setattr(module, "TIMEOUT", 3)
     result = DockerExecutor("personal-assistant-python:local").execute(code)

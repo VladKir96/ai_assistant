@@ -3,8 +3,8 @@ import asyncio
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from personal_assistant.config import Settings
-from personal_assistant.models import Base
+from personal_assistant.core.config import Settings
+from personal_assistant.storage.models import Base
 
 
 def run(connection):

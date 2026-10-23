@@ -10,8 +10,8 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-from personal_assistant import cli, local_start
-from personal_assistant.local_start import Service, StartupError, Supervisor
+from personal_assistant.app import cli, local_start
+from personal_assistant.app.local_start import Service, StartupError, Supervisor
 
 
 @pytest.fixture
@@ -58,6 +58,31 @@ def test_cloud_profile_does_not_require_local_weights(configured):
         configured.model_copy(update={"model_provider": "openai", "local_model_file": None})
     )
     assert [item.name for item in services] == ["api"]
+
+
+def test_tts_only_startup_needs_no_whisper_and_accepts_serbian_voice(
+    configured, tmp_path, monkeypatch
+):
+    model = tmp_path / "serbian.onnx"
+    model.touch()
+    settings = configured.model_copy(
+        update={"voice_output_enabled": True, "voice_enabled": False, "piper_sr_model": str(model)}
+    )
+    checked = []
+    monkeypatch.setattr(local_start, "executable", lambda value, label: checked.append(label))
+    monkeypatch.setattr(local_start.importlib.util, "find_spec", lambda name: object())
+    with pytest.raises(StartupError, match="matching .onnx.json"):
+        local_start.plan(settings)
+    Path(str(model) + ".json").touch()
+    assert [service.name for service in local_start.plan(settings)] == [
+        "inference",
+        "speech",
+        "api",
+    ]
+    assert "Whisper" not in checked
+    monkeypatch.setattr(local_start.importlib.util, "find_spec", lambda name: None)
+    with pytest.raises(StartupError, match="extra tts"):
+        local_start.plan(settings)
 
 
 def test_enabled_pdf_requires_extra_and_directory(configured, tmp_path, monkeypatch):

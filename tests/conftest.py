@@ -3,17 +3,17 @@ from dataclasses import dataclass
 import pytest_asyncio
 from langgraph.checkpoint.memory import InMemorySaver
 
-from personal_assistant.artifacts import ArtifactStore
-from personal_assistant.config import Settings
-from personal_assistant.context import ContextBuilder
-from personal_assistant.database import Database
-from personal_assistant.graph import AssistantGraph
-from personal_assistant.llm import Embeddings
-from personal_assistant.mcp_tools import MCPTools
-from personal_assistant.repository import Repository
-from personal_assistant.research import Research
-from personal_assistant.runtime import Runtime
-from personal_assistant.service import AssistantService
+from personal_assistant.agent.context import ContextBuilder
+from personal_assistant.agent.graph import AssistantGraph
+from personal_assistant.agent.service import AssistantService
+from personal_assistant.app.runtime import Runtime
+from personal_assistant.core.config import Settings
+from personal_assistant.inference.llm import Embeddings
+from personal_assistant.integrations.mcp_tools import MCPTools
+from personal_assistant.integrations.research import Research
+from personal_assistant.storage.artifacts import ArtifactStore
+from personal_assistant.storage.database import Database
+from personal_assistant.storage.repository import Repository
 
 
 class ScriptedModel:

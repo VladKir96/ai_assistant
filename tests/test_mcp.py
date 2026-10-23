@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from personal_assistant.mcp_tools import MCPTools
+from personal_assistant.integrations.mcp_tools import MCPTools
 
 
 async def test_stdio_mcp_discovery_call_and_allowlist(harness, tmp_path):

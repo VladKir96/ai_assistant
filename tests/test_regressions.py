@@ -1,12 +1,12 @@
 import pytest
 from sqlalchemy import select
 
-from personal_assistant.config import Settings
-from personal_assistant.context import ContextBuilder
-from personal_assistant.demo import run_demo
-from personal_assistant.graph import Draft, authorize_mutation
-from personal_assistant.models import Message, Run, Thread
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review, Summary
+from personal_assistant.agent.context import ContextBuilder
+from personal_assistant.agent.graph import Draft, authorize_mutation
+from personal_assistant.app.demo import run_demo
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review, Summary
+from personal_assistant.storage.models import Message, Run, Thread
 from tests.conftest import ScriptedModel
 
 

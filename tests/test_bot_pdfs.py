@@ -3,7 +3,7 @@ import pytest
 from aiogram.types import Update
 from pydantic import SecretStr
 
-from personal_assistant import bot
+from personal_assistant.app import bot
 
 
 @pytest.mark.parametrize("enabled", [False, True])

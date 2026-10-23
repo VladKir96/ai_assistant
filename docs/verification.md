@@ -1,5 +1,46 @@
 # Verification record
 
+Non-Mac Docker setup documentation checked on 2026-10-23:
+
+- Added a standalone Linux and Windows/WSL 2 guide covering containerized credential
+  initialization, local CPU or hosted inference, migrations, text-chat checks, Telegram,
+  optional features, updates, logs, and persistent data. Host Python/uv and a native
+  llama.cpp executable are not required by this setup.
+- The Linux inference override now waits for the model health check before starting
+  the API, with a longer health-check window for model loading. Compose configuration
+  validation passed for local text, Telegram, reminders/analysis, vision, hosted text,
+  and hosted optional-service configurations using temporary dummy credentials.
+- Shell syntax, local documentation links/anchors, Ruff lint/format, and whitespace
+  checks passed. The initializer was exercised in a temporary directory: random
+  credentials, private file permissions, and refusal to overwrite `.env` were checked.
+- Docker's daemon was not running during these checks. No container build/startup,
+  live inference, Telegram delivery, or Windows/WSL execution was performed for this
+  documentation change; configuration validation is not an end-to-end deployment test.
+
+Piper Telegram audio mode verified on 2026-10-22:
+
+- **426 passed, 6 skipped** with speech/TTS extras and isolated PostgreSQL enabled.
+  Skips are the explicit OCR-data check and five optional Python Docker worker checks.
+  Ruff lint/format, lock consistency, documentation links, whitespace checks, and the
+  offline demo passed. CI now also installs the optional TTS extra in its speech job.
+- Migration `0005` passed on the isolated test database; `alembic check` reported no
+  pending schema operations. Concurrent PostgreSQL upserts and a fresh database
+  connection verified preference persistence. The test database was stopped afterward.
+- Dispatcher tests cover private-owner access, `/audio on|off|status`, persistence across
+  `/new` and bot restarts, text-first output, and text/voice/image/PDF questions.
+  Other checks cover offline script/language detection, cleaned/truncated prose, bounded
+  queues, failure recovery, cancelled requests, server disconnect handling, and actual
+  child-process termination/reaping. TTS-only startup requires no Whisper weights.
+- Real Piper 1.8.0 and Lingua 2.2.0 synthesized English, Russian, Serbian Latin, and
+  Serbian Cyrillic samples through the speech HTTP app. Each response had the expected
+  detected language and decoded as nonempty Ogg/Opus (roughly 2.8–3.4 seconds per sample).
+  Conversion used a temporary imageio-ffmpeg binary; no system FFmpeg was installed.
+  Voices are in ignored `models/piper`; samples/results are in `data/tts-validation`.
+- Speech quality was not assessed by listening, and live Telegram delivery was not
+  exercised. The community Serbian voice remains subject to its author's prosody caveat.
+  No private `.env` change or production migration was made; follow [voice setup](voice.md)
+  and restart the services to enable the feature.
+
 Final code-review fixes verified on 2026-10-20:
 
 - Writes now require explicit note/task/calendar intent; edits/completion bind to an

@@ -6,12 +6,12 @@ import pytest
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from sqlalchemy import func, select
 
-from personal_assistant.config import Settings
-from personal_assistant.graph import AssistantGraph, Draft
-from personal_assistant.llm import HTTPModel, ModelError
-from personal_assistant.models import Operation
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.tool_execution import ToolExecutor
+from personal_assistant.agent.graph import AssistantGraph, Draft
+from personal_assistant.agent.tool_execution import ToolExecutor
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.inference.llm import HTTPModel, ModelError
+from personal_assistant.storage.models import Operation
 from tests.conftest import ScriptedModel
 
 

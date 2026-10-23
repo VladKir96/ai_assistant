@@ -3,13 +3,13 @@ from uuid import uuid4
 
 import pytest
 
-from personal_assistant.authorization import authorize_mutation
-from personal_assistant.graph import Draft
-from personal_assistant.jobs import claim_due
-from personal_assistant.models import Task, now
-from personal_assistant.schemas import Action, AgentTask, ChatRequest, Plan, Review
-from personal_assistant.service import AssistantService
-from personal_assistant.tool_execution import assign_analysis_identity, effective_results
+from personal_assistant.agent.authorization import authorize_mutation
+from personal_assistant.agent.graph import Draft
+from personal_assistant.agent.service import AssistantService
+from personal_assistant.agent.tool_execution import assign_analysis_identity, effective_results
+from personal_assistant.app.jobs import claim_due
+from personal_assistant.core.schemas import Action, AgentTask, ChatRequest, Plan, Review
+from personal_assistant.storage.models import Task, now
 from tests.conftest import ScriptedModel
 
 
@@ -189,7 +189,7 @@ async def test_storage_backed_selectors_allow_explicit_bilingual_edits(harness, 
 async def test_expired_final_reminder_claim_reaches_failed_without_another_send(
     harness, monkeypatch
 ):
-    from personal_assistant import jobs
+    from personal_assistant.app import jobs
 
     instant = now()
     async with harness.database.sessions.begin() as session:

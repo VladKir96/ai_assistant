@@ -8,14 +8,14 @@ import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from sqlalchemy import select
 
-from personal_assistant.api import create_app
-from personal_assistant.graph import Draft
-from personal_assistant.llm import ModelError
-from personal_assistant.mcp_tools import MCPTools
-from personal_assistant.models import Run
-from personal_assistant.pdf_mcp import PDFReader
-from personal_assistant.pdf_uploads import PDFInputError, PDFUploads
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import Draft
+from personal_assistant.app.api import create_app
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.inference.llm import ModelError
+from personal_assistant.integrations.mcp_tools import MCPTools
+from personal_assistant.media.pdf_mcp import PDFReader
+from personal_assistant.media.pdf_uploads import PDFInputError, PDFUploads
+from personal_assistant.storage.models import Run
 from tests.conftest import ScriptedModel
 from tests.test_pdf_mcp import pdf_folder as pdf_folder
 

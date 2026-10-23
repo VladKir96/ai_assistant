@@ -5,11 +5,11 @@ from zoneinfo import ZoneInfo
 import httpx
 import pytest
 
-from personal_assistant.api import create_app
-from personal_assistant.graph import Draft
-from personal_assistant.models import Document, Message, Run
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.time_utils import date_bounds
+from personal_assistant.agent.graph import Draft
+from personal_assistant.app.api import create_app
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.core.time_utils import date_bounds
+from personal_assistant.storage.models import Document, Message, Run
 from tests.conftest import ScriptedModel
 
 

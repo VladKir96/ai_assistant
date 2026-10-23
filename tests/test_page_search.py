@@ -5,11 +5,11 @@ from unittest.mock import AsyncMock
 import aiohttp
 import pytest
 
-from personal_assistant.config import Settings
-from personal_assistant.graph import AssistantGraph, Draft
-from personal_assistant.llm import fit_payload
-from personal_assistant.research import Research
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.agent.graph import AssistantGraph, Draft
+from personal_assistant.core.config import Settings
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.inference.llm import fit_payload
+from personal_assistant.integrations.research import Research
 from tests.conftest import ScriptedModel
 
 
@@ -131,7 +131,7 @@ async def test_page_reader_extracts_dated_weather_table_and_records_fetch_metada
         async def __aexit__(self, *args):
             await self.connector.close()
 
-    monkeypatch.setattr("personal_assistant.research.aiohttp.ClientSession", Session)
+    monkeypatch.setattr("personal_assistant.integrations.research.aiohttp.ClientSession", Session)
     result = await Research(Settings(_env_file=None)).read("https://example.org/weather")
     assert "2026-10-18" in result["content"]
     assert "Прогноз" in result["content"]

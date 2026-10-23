@@ -5,12 +5,12 @@ import pytest
 from icalendar import Calendar
 from sqlalchemy import func, select
 
-from personal_assistant.api import create_app
-from personal_assistant.graph import PLANNER, Draft, authorize_mutation
-from personal_assistant.llm import fit_payload
-from personal_assistant.models import CalendarEvent, Operation
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.time_utils import event_time
+from personal_assistant.agent.graph import PLANNER, Draft, authorize_mutation
+from personal_assistant.app.api import create_app
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.core.time_utils import event_time
+from personal_assistant.inference.llm import fit_payload
+from personal_assistant.storage.models import CalendarEvent, Operation
 from tests.conftest import ScriptedModel
 
 
@@ -198,7 +198,7 @@ async def test_bot_agenda_and_calendar_export_remain_private(harness, monkeypatc
     from aiogram.types import Update
     from pydantic import SecretStr
 
-    from personal_assistant import bot
+    from personal_assistant.app import bot
 
     event = (await harness.repository.mutate(event_action(), "bot:event", "test"))["event"]
     exported = await harness.repository.calendar.export_ics()

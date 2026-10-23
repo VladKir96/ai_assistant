@@ -10,13 +10,13 @@ from PIL import Image
 from pydantic import SecretStr
 from sqlalchemy import select
 
-from personal_assistant.api import create_app
-from personal_assistant.graph import Draft
-from personal_assistant.images import ImageInputError, VisionUnavailable, prepare_image
-from personal_assistant.llm import ContextLimitError, HTTPModel, ModelError
-from personal_assistant.models import Run
-from personal_assistant.schemas import Action, ChatRequest, Plan, Review
-from personal_assistant.vision import ImageObservation, VisionAnalyzer
+from personal_assistant.agent.graph import Draft
+from personal_assistant.app.api import create_app
+from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.inference.llm import ContextLimitError, HTTPModel, ModelError
+from personal_assistant.media.images import ImageInputError, VisionUnavailable, prepare_image
+from personal_assistant.media.vision import ImageObservation, VisionAnalyzer
+from personal_assistant.storage.models import Run
 from tests.conftest import ScriptedModel
 
 
@@ -62,7 +62,7 @@ def test_animation_and_pixel_bombs_are_rejected(monkeypatch):
     )
     with pytest.raises(ImageInputError, match="static"):
         prepare_image(output.getvalue())
-    monkeypatch.setattr("personal_assistant.images.MAX_IMAGE_PIXELS", 10)
+    monkeypatch.setattr("personal_assistant.media.images.MAX_IMAGE_PIXELS", 10)
     with pytest.raises(ImageInputError, match="megapixel"):
         prepare_image(image_bytes())
 
@@ -288,8 +288,8 @@ async def test_disabled_vision_never_contacts_a_provider(harness):
 
 
 def test_vision_configuration_requires_space_for_text_and_image(harness):
-    from personal_assistant.config import Settings
-    from personal_assistant.model_profiles import ModelProfile
+    from personal_assistant.core.config import Settings
+    from personal_assistant.inference.model_profiles import ModelProfile
 
     with pytest.raises(ValueError, match="Vision"):
         Settings(_env_file=None, model_supports_images=True, context_window=8192)

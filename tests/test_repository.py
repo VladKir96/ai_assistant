@@ -3,8 +3,8 @@ from datetime import timedelta
 import pytest
 from sqlalchemy import func, select
 
-from personal_assistant.models import Revision, now
-from personal_assistant.schemas import Action
+from personal_assistant.core.schemas import Action
+from personal_assistant.storage.models import Revision, now
 
 
 async def test_note_revision_retrieval_export_and_deletion(harness):

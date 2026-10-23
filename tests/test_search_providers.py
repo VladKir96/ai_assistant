@@ -3,8 +3,8 @@ import json
 import httpx
 import pytest
 
-from personal_assistant import research
-from personal_assistant.config import Settings
+from personal_assistant.core.config import Settings
+from personal_assistant.integrations import research
 
 
 def fake_duckduckgo(monkeypatch, results=None, error=None):

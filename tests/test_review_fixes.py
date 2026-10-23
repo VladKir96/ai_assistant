@@ -9,19 +9,19 @@ import httpx
 import pytest
 from starlette.datastructures import UploadFile
 
-from personal_assistant.authorization import authorize_mutation
-from personal_assistant.context import bounded_context
-from personal_assistant.graph import PLANNER, AssistantGraph, Draft
-from personal_assistant.http_guard import PrivateBodyGuard
-from personal_assistant.llm import ContextLimitError, HTTPModel, ModelError
-from personal_assistant.mcp_tools import MCPTools, ServerConfig
-from personal_assistant.models import Document
-from personal_assistant.repository import Repository
-from personal_assistant.schemas import Action, ChatRequest, Plan
-from personal_assistant.time_utils import clock_context
-from personal_assistant.tool_execution import ToolExecutor
-from personal_assistant.tools import TOOLS, TOOLS_BY_ROLE
-from personal_assistant.voice import create_speech_app
+from personal_assistant.agent.authorization import authorize_mutation
+from personal_assistant.agent.context import bounded_context
+from personal_assistant.agent.graph import PLANNER, AssistantGraph, Draft
+from personal_assistant.agent.tool_execution import ToolExecutor
+from personal_assistant.agent.tools import TOOLS, TOOLS_BY_ROLE
+from personal_assistant.core.http_guard import PrivateBodyGuard
+from personal_assistant.core.schemas import Action, ChatRequest, Plan
+from personal_assistant.core.time_utils import clock_context
+from personal_assistant.inference.llm import ContextLimitError, HTTPModel, ModelError
+from personal_assistant.integrations.mcp_tools import MCPTools, ServerConfig
+from personal_assistant.media.voice import create_speech_app
+from personal_assistant.storage.models import Document
+from personal_assistant.storage.repository import Repository
 from tests.conftest import ScriptedModel
 
 
@@ -478,7 +478,7 @@ async def test_empty_successful_mcp_catalog_is_not_reported_as_an_outage(harness
 
 
 def test_tool_registry_matches_names_permissions_and_executor_handlers():
-    from personal_assistant.tools import ToolName
+    from personal_assistant.agent.tools import ToolName
 
     assert {item.value for item in ToolName} == set(TOOLS)
     for name, spec in TOOLS.items():

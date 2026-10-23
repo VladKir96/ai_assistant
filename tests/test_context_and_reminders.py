@@ -4,11 +4,11 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from personal_assistant.bot import permitted, split_text
-from personal_assistant.context import ContextBuilder
-from personal_assistant.jobs import claim_due
-from personal_assistant.models import Message, Run, Task, Thread, now
-from personal_assistant.schemas import Summary
+from personal_assistant.agent.context import ContextBuilder
+from personal_assistant.app.bot import permitted, split_text
+from personal_assistant.app.jobs import claim_due
+from personal_assistant.core.schemas import Summary
+from personal_assistant.storage.models import Message, Run, Task, Thread, now
 
 
 async def test_compaction_preserves_archive_and_persists_summary_cursor(harness):
