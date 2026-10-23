@@ -28,7 +28,7 @@ a callback that uploads the entire LangGraph state.
 3. Install the updated dependencies and check the connection:
 
    ```sh
-   uv sync --frozen --extra dev --extra mcp --extra pdf --extra speech
+   uv sync --frozen
    uv run assistant tracing-check
    ```
 
@@ -40,7 +40,7 @@ a callback that uploads the entire LangGraph state.
 4. Restart the native assistant:
 
    ```sh
-   uv run --extra speech --extra pdf assistant start
+   uv run assistant start
    ```
 
    If the launcher is already running, stop it with Ctrl+C first. For Docker,

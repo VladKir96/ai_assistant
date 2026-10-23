@@ -15,6 +15,12 @@ and the scope of configuration/readiness checks.
 
 ## Package layout
 
+All runtime feature libraries are standard project dependencies. `uv run assistant start`
+uses `.env` to select speech, PDF reading, MCP, embeddings, and Python analysis. The
+installation includes their libraries even when a feature is disabled; disabled
+companions are not started. Model weights and external native executables remain
+explicit setup inputs. The application Docker image also includes FFmpeg.
+
 Modules under `src/personal_assistant` are grouped by responsibility:
 
 | Package | Contents |
@@ -323,7 +329,7 @@ wording. No new dependency, database table, scheduled service, or API credential
 ## Speech
 
 The Telegram bot sends authenticated audio uploads to a separate speech companion.
-`stt_backend` selects whisper.cpp/FFmpeg or the optional faster-whisper/CTranslate2
+`stt_backend` selects whisper.cpp/FFmpeg or the included faster-whisper/CTranslate2
 adapter. Faster-whisper loads a complete local model directory once at service startup,
 disables ONNX Runtime telemetry, and uses local-only model loading. Explicit CLI model
 downloads resolve and record a repository commit; runtime never downloads missing weights.
@@ -334,14 +340,15 @@ does not block its async event loop. Automatic language detection preserves the 
 language; fixed `en`/`ru`/`sr` recognition can also be selected.
 
 On this Mac, faster-whisper uses CPU/INT8; CTranslate2 does not expose Metal/MPS.
-The optional `speech` dependency group is excluded from the default app Docker image;
-containerized bots can access a native companion through the existing speech URL.
+Speech and embedding libraries are included in the default app Docker image.
+Containerized bots can access a companion through the configured speech URL; model
+files and companion containers still need provisioning.
 Voice input and audio replies have separate switches. Text replies work without Piper;
 enabling audio replies also requires Piper voices and FFmpeg. The whisper.cpp backend
 remains available with its existing executable/model settings.
 
-Piper output uses a separate `tts` dependency group and runs independently of voice
-input. `/audio on|off|status` controls a PostgreSQL chat preference keyed by the owner's
+Piper output and language detection are included in the standard installation and
+run independently of voice input. `/audio on|off|status` controls a PostgreSQL chat preference keyed by the owner's
 Telegram ID, outside LangGraph conversation state. The bot sends reviewed text first,
 then submits cleaned prose to one background audio worker with three waiting slots.
 Cancellation discards queued audio and closes the current speech request; the speech

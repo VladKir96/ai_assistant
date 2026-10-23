@@ -9,11 +9,11 @@ URL fetching, albums or video are included.
 Install updated dependencies and apply migration `0003` before starting the API:
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra speech --extra pdf
+uv sync --frozen
 uv run assistant migrate
 ```
 
-Keep extras needed by your enabled services. The database must be available for manual
+All feature libraries are included by default. The database must be available for manual
 `migrate`; `assistant start` applies migrations automatically.
 
 For local inference, download a vision-language GGUF supported by your llama.cpp version
@@ -34,7 +34,7 @@ Select the profile and restart:
 
 ```sh
 uv run assistant models --use local-vision
-uv run --extra speech --extra pdf assistant start
+uv run assistant start
 ```
 
 The launcher requires an existing projector; `assistant inference` passes `--mmproj`

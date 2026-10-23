@@ -21,7 +21,7 @@ def validate_model(path: Path):
     ):
         raise ValueError(
             "Configure ASSISTANT_FASTER_WHISPER_MODEL with a complete CTranslate2 model directory. "
-            "Run `uv run --extra speech assistant speech-download` first. "
+            "Run `uv run assistant speech-download` first. "
             "A whisper.cpp .bin or llama.cpp GGUF is not compatible."
         )
 
@@ -64,7 +64,7 @@ class FasterWhisper:
             import onnxruntime
             from faster_whisper import WhisperModel
         except ImportError:
-            raise ValueError("Install speech dependencies: uv sync --extra speech") from None
+            raise ValueError("Speech dependencies are missing; run `uv sync --frozen`.") from None
         onnxruntime.disable_telemetry_events()
         self.model = WhisperModel(
             str(path),
@@ -97,7 +97,7 @@ def download_model(output: Path, repo_id: str = MODEL_REPO, revision: str = "mai
     try:
         from huggingface_hub import HfApi, snapshot_download
     except ImportError:
-        raise ValueError("Install speech dependencies: uv sync --extra speech") from None
+        raise ValueError("Speech dependencies are missing; run `uv sync --frozen`.") from None
     info = HfApi(token=False).model_info(repo_id, revision=revision)
     snapshot_download(
         repo_id,

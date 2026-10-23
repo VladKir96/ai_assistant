@@ -148,16 +148,18 @@ class PDFReader:
             raise
         except Exception:
             raise ValueError("PDF extraction failed; no text was obtained") from None
+        excerpt = clip(text, 2000)
+        truncated = "true" if excerpt != text else "false"
         header = (
             f"File: {self.reference(path)}; pages {start_page}-{end} of {total}; "
-            f"method: {'OCR' if ocr else 'embedded text'}. "
+            f"method: {'OCR' if ocr else 'embedded text'}; text_truncated={truncated}. "
             "Bounded excerpt; omitted text/pages are not analyzed.\n"
         )
         if not ocr and not any(
             line.strip() for line in text.splitlines() if not line.startswith("----------")
         ):
             header += "No embedded text found; scanned pages may require OCR.\n"
-        return header + clip(text, 2000)
+        return header + excerpt
 
 
 def create_server(root: Path, tessdata: Path | None = None, uploads: Path | None = None):

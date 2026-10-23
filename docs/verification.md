@@ -1,5 +1,26 @@
 # Verification record
 
+Standard feature installation verified on 2026-10-23:
+
+- `uv run assistant start` now includes speech, TTS, PDF/MCP, embeddings, and Python
+  runner libraries by default. `.env` selects enabled services. Old feature extras
+  remain empty compatibility aliases; the developer test/lint extra is separate.
+- `.env.example` and the local private `.env` were grouped into numbered sections,
+  with feature switches first and model/binary requirements explained beside settings.
+  Every existing private value and effective setting was preserved; missing keys
+  were filled with documented defaults. Private file permissions remain 0600.
+- Plain `uv run --frozen assistant start --check` passed against the local settings
+  without starting services. The full suite passed **435 tests, 12 skipped**; the
+  five explicit Docker sandbox tests passed separately. Lint/format, lock consistency,
+  documentation links/shell syntax, CI YAML/shell syntax, and the offline demo passed.
+- The default Linux ARM64 application image built with CPU PyTorch and FFmpeg.
+  All feature libraries imported with container networking disabled; FFmpeg encoded
+  a synthetic Ogg/Opus sample, and the image's offline assistant demo passed.
+  No live model requests, Telegram delivery, or production migrations were performed.
+
+Older records below describe their original commands. Use the current startup guides
+for the single-command startup instead of historical feature-extra examples.
+
 Non-Mac Docker setup documentation checked on 2026-10-23:
 
 - Added a standalone Linux and Windows/WSL 2 guide covering containerized credential

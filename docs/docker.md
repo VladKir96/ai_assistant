@@ -241,8 +241,9 @@ For local vision, use the [vision overlay](images.md#docker) with a compatible m
 and matching projector; include that overlay in your `dc` helper for later commands.
 Hosted vision requires a capable model and the explicit image-support flag.
 
-Speech and embedding companions are not defined in the supplied Compose stack, and
-the base image does not install their optional runtime dependencies or model weights.
+The application image includes speech/embedding libraries and FFmpeg. Speech and
+embedding companion services are not defined in the supplied Compose stack; their
+model weights are not included.
 Keep voice input/output and HTTP embeddings disabled for this baseline. Enabling them
 requires separately provisioned companion services and reachable container URLs; see
 [voice setup](voice.md) and [semantic search](../README.md#semantic-memory-and-rag).

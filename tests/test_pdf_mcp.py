@@ -46,6 +46,7 @@ async def test_real_pdf_mcp_discovery_extraction_and_allowlist(harness, pdf_fold
     assert result["untrusted"]
     assert "Hello PDF / Привет PDF" in result["content"]
     assert "pages 1-1 of 4" in result["content"]
+    assert "text_truncated=false" in result["content"]
     assert "Second page" not in result["content"]
     with pytest.raises(ValueError, match="allowed"):
         await tools.read("pdf-reader", "read_pdf_to_file", {"file_paths": ["fixture.pdf"]})
@@ -134,6 +135,18 @@ def test_pdf_encrypted_documents_and_bounded_excerpts(pdf_folder):
         document.save(pdf_folder / "long.pdf")
     result = PDFReader(pdf_folder).read("long.pdf")
     assert len(result.encode()) < 2400 and "Bounded excerpt" in result
+
+
+def test_pdf_truncation_is_explicit_when_excerpt_touches_every_page(pdf_folder):
+    with pymupdf.open() as document:
+        for _ in range(2):
+            page = document.new_page()
+            page.insert_textbox(page.rect, "Long synthetic text. " * 200, fontsize=5)
+        document.save(pdf_folder / "two-pages.pdf")
+    result = PDFReader(pdf_folder).read("two-pages.pdf")
+    assert "pages 1-2 of 2" in result
+    assert "text_truncated=true" in result
+    assert len(result.encode()) < 2400
 
 
 def test_ocr_requires_language_data_and_does_not_hide_upstream_failure(

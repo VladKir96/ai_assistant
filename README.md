@@ -108,7 +108,7 @@ for tool permissions, memory, and recovery details.
 Install Python 3.12 or 3.13 and [uv](https://docs.astral.sh/uv/), then run from this directory:
 
 ```sh
-uv sync --frozen --extra dev --extra mcp
+uv sync --frozen
 uv run assistant demo
 ```
 
@@ -141,11 +141,10 @@ After first-time setup, start the native stack from **one terminal**:
 uv run assistant start
 ```
 
-For faster-whisper voice input, include its optional dependencies:
-
-```sh
-uv run --extra speech assistant start
-```
+All feature libraries are installed by default. The same command supports speech,
+Piper replies, PDFs, MCP, embeddings, and Python analysis. Select services with the
+switches at the top of `.env`; no feature extras are needed on the command line.
+Model weights and native tools such as llama-server/FFmpeg still need their documented setup.
 
 The launcher opens Docker Desktop on macOS if needed, waits for PostgreSQL, applies
 migrations, then starts local inference, enabled speech/embedding companions, the API,
@@ -284,15 +283,15 @@ is process-local and resets to its default thread after a bot restart.
 
 ## Semantic memory and RAG
 
-Keyword retrieval works immediately. To add multilingual semantic search, install and
-start the local embedding companion (the first start downloads BGE-M3 weights):
+Keyword retrieval works immediately. The embedding companion is included; its first
+start downloads BGE-M3 weights. For manual startup:
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra embeddings
 uv run assistant embeddings
 ```
 
-Set these values in `.env`, restart the API, and reindex existing notes:
+Set these values in `.env`, restart `assistant start` to launch the companion automatically,
+and reindex existing notes:
 
 ```dotenv
 ASSISTANT_EMBEDDING_BACKEND=http
@@ -303,6 +302,9 @@ ASSISTANT_EMBEDDING_MODEL=BAAI/bge-m3
 `assistant init` sets the embedding API key to the application token. Set
 `ASSISTANT_EMBEDDING_DEVICE=mps` to test Apple GPU embedding inference, or keep `cpu`
 for portability. The database expects 1024 dimensions. Changing models requires reindexing.
+The standard Linux installation uses CPU PyTorch to avoid installing unused CUDA
+libraries. GPU embeddings on Linux need a matching PyTorch build; local llama.cpp
+GPU inference is configured separately.
 
 ```sh
 uv run assistant reindex
@@ -540,7 +542,7 @@ limit. This role also participates in parallel teams.
 Enable `ASSISTANT_PYTHON_ENABLED=true`, then start with:
 
 ```sh
-uv run --extra speech --extra pdf --extra python-runner assistant start
+uv run assistant start
 ```
 
 The launcher builds the worker image and starts its private broker. See
@@ -551,12 +553,12 @@ examples, downloads, and the trusted broker's Docker access.
 
 Voice input supports **faster-whisper** and the existing whisper.cpp backend.
 For [Systran/faster-whisper-large-v3](https://huggingface.co/Systran/faster-whisper-large-v3),
-install the optional dependencies and download the complete CTranslate2 model directory
+download the complete CTranslate2 model directory
 (about 3.1 GB, once):
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra speech
-uv run --extra speech assistant speech-download
+uv sync --frozen
+uv run assistant speech-download
 ```
 
 Configure `.env` for voice input with text replies:
@@ -583,7 +585,7 @@ weights or sends audio to a cloud recognition service. ONNX Runtime telemetry is
 Start the speech companion in its own terminal and wait for `Application startup complete`:
 
 ```sh
-uv run --extra speech assistant speech
+uv run assistant speech
 ```
 
 Check it in another terminal:
@@ -602,7 +604,7 @@ Switch recognition models by downloading another **CTranslate2 Whisper** reposit
 changing `ASSISTANT_FASTER_WHISPER_MODEL` to its directory, then restarting speech:
 
 ```sh
-uv run --extra speech assistant speech-download --repo-id Systran/faster-whisper-medium --output models/faster-whisper-medium
+uv run assistant speech-download --repo-id Systran/faster-whisper-medium --output models/faster-whisper-medium
 ```
 
 `--revision <commit>` pins a specific revision; each download records its resolved commit
@@ -620,7 +622,8 @@ needs neither Piper, whisper-cli, nor a system FFmpeg executable; PyAV decodes t
 
 The companion is HTTP-based, so a Docker bot can use the native Mac service: start speech
 with `--host 0.0.0.0` for container access; Compose uses `host.docker.internal:8765`.
-The default application Docker image does not install the optional speech extra or weights.
+The application Docker image includes speech libraries and FFmpeg; provision the speech
+companion and its model mounts separately. Model weights are not included.
 Synthetic multilingual Ogg/Opus transcription has been checked with the real large-v3
 model. Real personal voice accuracy and live Telegram delivery still need a user check.
 
@@ -657,14 +660,14 @@ a question in its caption, or put a local PDF in `data/pdf`. Uploads need no vis
 PDF URL downloads are not implemented. See [PDF setup and usage](docs/pdf.md).
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra speech --extra pdf
+uv sync --frozen
 mkdir -p data/pdf data/tessdata
 ```
 
 Set `ASSISTANT_PDF_ENABLED=true` in your private `.env`, then restart with:
 
 ```sh
-uv run --extra speech --extra pdf assistant start
+uv run assistant start
 ```
 
 Ask, for example: `Read the first page of resume.pdf` or
@@ -777,7 +780,10 @@ behind the `LanguageModel` interface.
 
 ## Tests and model evaluation
 
+Development tools are separate from the feature libraries installed for normal use:
+
 ```sh
+uv sync --frozen --extra dev
 uv run ruff check .
 uv run ruff format --check .
 uv run pytest

@@ -20,10 +20,10 @@ ASSISTANT_ARTIFACT_DIRECTORY=data/artifacts
 Stop any running launcher with Ctrl+C, then run from the project folder:
 
 ```sh
-uv run --extra speech --extra pdf --extra python-runner assistant start
+uv run assistant start
 ```
 
-The launcher checks the Docker client extra, starts/waits for Docker Desktop, builds
+The launcher uses the included Docker client, starts/waits for Docker Desktop, builds
 the cached worker image from `Dockerfile.python`, and starts the private runner before
 the model and API. The first build needs internet for locked dependencies. NumPy and
 Matplotlib are installed in the worker image, not your native Python environment.
@@ -32,7 +32,7 @@ For manual startup, build the image and run the broker in its own terminal:
 
 ```sh
 docker build -f Dockerfile.python -t personal-assistant-python:local .
-uv run --extra python-runner assistant python-runner
+uv run assistant python-runner
 ```
 
 Then start the model/API/bot as in [startup](startup.md). Check runner readiness with
@@ -126,7 +126,7 @@ include supplied datasets/generated code; leave it off to exclude that private c
 After building the worker image, run real Docker checks with:
 
 ```sh
-TEST_PYTHON_DOCKER=1 uv run --extra dev --extra python-runner pytest -q tests/test_python_analysis.py
+TEST_PYTHON_DOCKER=1 uv run --extra dev pytest -q tests/test_python_analysis.py
 ```
 
 They cover arithmetic, charts, denied networking, absence of assistant credentials/

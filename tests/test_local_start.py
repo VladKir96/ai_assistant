@@ -53,6 +53,48 @@ def test_plan_includes_enabled_companions_and_custom_ports(configured, tmp_path,
     assert services[-1].command == ["api", "--host", "127.0.0.1", "--port", "18000"]
 
 
+def test_standard_installation_selects_all_features_from_settings(configured, tmp_path):
+    speech = tmp_path / "speech"
+    speech.mkdir()
+    (speech / "model.bin").touch()
+    voice = tmp_path / "voice.onnx"
+    voice.touch()
+    Path(str(voice) + ".json").touch()
+    pdfs = tmp_path / "pdf"
+    pdfs.mkdir()
+    settings = configured.model_copy(
+        update={
+            "voice_enabled": True,
+            "voice_output_enabled": True,
+            "stt_backend": "faster_whisper",
+            "faster_whisper_model": str(speech),
+            "piper_en_model": str(voice),
+            "pdf_enabled": True,
+            "pdf_directory": pdfs,
+            "python_enabled": True,
+            "embedding_backend": "http",
+            "embedding_api_key": configured.api_token,
+        }
+    )
+    assert [service.name for service in local_start.plan(settings)] == [
+        "python-runner",
+        "inference",
+        "embeddings",
+        "speech",
+        "api",
+    ]
+    disabled = settings.model_copy(
+        update={
+            "voice_enabled": False,
+            "voice_output_enabled": False,
+            "pdf_enabled": False,
+            "python_enabled": False,
+            "embedding_backend": "disabled",
+        }
+    )
+    assert [service.name for service in local_start.plan(disabled)] == ["inference", "api"]
+
+
 def test_cloud_profile_does_not_require_local_weights(configured):
     services = local_start.plan(
         configured.model_copy(update={"model_provider": "openai", "local_model_file": None})
@@ -81,16 +123,18 @@ def test_tts_only_startup_needs_no_whisper_and_accepts_serbian_voice(
     ]
     assert "Whisper" not in checked
     monkeypatch.setattr(local_start.importlib.util, "find_spec", lambda name: None)
-    with pytest.raises(StartupError, match="extra tts"):
+    with pytest.raises(StartupError, match="uv sync --frozen"):
         local_start.plan(settings)
 
 
-def test_enabled_pdf_requires_extra_and_directory(configured, tmp_path, monkeypatch):
+def test_enabled_pdf_requires_installed_dependencies_and_directory(
+    configured, tmp_path, monkeypatch
+):
     settings = configured.model_copy(
         update={"pdf_enabled": True, "pdf_directory": tmp_path / "pdf"}
     )
     monkeypatch.setattr(local_start.importlib.util, "find_spec", lambda name: None)
-    with pytest.raises(StartupError, match="extra pdf"):
+    with pytest.raises(StartupError, match="uv sync --frozen"):
         local_start.plan(settings)
     monkeypatch.setattr(local_start.importlib.util, "find_spec", lambda name: object())
     with pytest.raises(StartupError, match="mkdir -p"):

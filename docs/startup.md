@@ -22,17 +22,12 @@ After completing first-time setup below, run from the project directory:
 uv run assistant start
 ```
 
-With faster-whisper enabled in `.env`, use this version to ensure the speech extra
-is installed:
-
-```sh
-uv run --extra speech assistant start
-```
-
-With PDF reading enabled, use `uv run --extra speech --extra pdf assistant start`.
-Create `data/pdf` first, then upload PDFs as Telegram files or put local PDFs there;
-follow [PDF setup](pdf.md). The PDF server
-is launched on demand through stdio; it needs no separate terminal.
+The command is the same for every feature. Speech input/output, PDF reading, MCP,
+embeddings, and Python analysis libraries are installed by default. Enable services
+with the switches at the top of `.env`, then fill in their model paths and other
+settings in the matching numbered sections. Disabled services are not started.
+For PDF reading, create `data/pdf` first; the managed server runs on demand through
+stdio. See [PDF setup](pdf.md).
 
 This replaces the separate model, API, speech/embedding, and bot terminals. Stop those
 previously started native processes, including the Telegram bot, before switching.
@@ -41,7 +36,7 @@ Leave an existing Compose PostgreSQL container running; the launcher checks it t
 
 The launcher:
 
-1. Validates credentials, owner ID, model files, optional dependencies, local service
+1. Validates credentials, owner ID, model files, installed dependencies, local service
    URLs, and port assignments before starting services.
 2. Opens Docker Desktop on macOS when necessary and waits for the engine.
 3. Starts/waits for PostgreSQL and applies application and LangGraph migrations.
@@ -68,15 +63,15 @@ To stop PostgreSQL afterward, use `docker compose stop postgres`.
 Useful variants:
 
 ```sh
-uv run --extra speech assistant start --check
-uv run --extra speech assistant start --no-bot
-uv run --extra speech assistant start --startup-timeout 600
+uv run assistant start --check
+uv run assistant start --no-bot
+uv run assistant start --startup-timeout 600
 ```
 
 `--check` checks static configuration only; it does not probe Docker, occupied ports,
 Telegram credentials over the network, or actual model readiness. The readiness
-timeout defaults to 300 seconds per service. For semantic embeddings, also include
-`--extra embeddings`; their existing companion may download its model on first use.
+timeout defaults to 300 seconds per service. The embedding companion may download
+its configured model on first use.
 These commands do not download chat or speech weights or configure missing credentials.
 
 For manual startup or after switching models, run `uv run assistant check-context`
@@ -125,7 +120,7 @@ cd ~/Assistant
 uv --version
 docker --version
 docker compose version
-uv sync --frozen --extra dev --extra mcp
+uv sync --frozen
 ```
 
 `docker --version` confirms that the Docker client exists. It does **not** confirm
@@ -380,8 +375,8 @@ search additionally requires your chosen domains in `ASSISTANT_JOB_SITES`.
 | CLI chat or Telegram ordinary chat fails | Check Terminal B for model readiness and Terminal C for the request error. The model alias, endpoint, and inference key must match the API configuration. |
 | Context-budget error on a short message | Restart the updated API and run `uv run assistant check-context` with inference ready. The check includes instructions, schema, clock, and MCP tools. If the endpoint lacks a token counter, its conservative fallback may require a larger context configured in both the profile and server. No history deletion is needed. |
 | Configuration edits seem to have no effect | Restart affected processes. Check whether exported environment variables override `.env`. Recreate Docker app containers when their environment changes. |
-| Voice is disabled or unavailable | Follow the README voice setup, start `uv run --extra speech assistant speech`, wait for startup, check `curl -fsS http://127.0.0.1:8765/health`, then restart the bot with voice enabled. For input with text replies, set `ASSISTANT_VOICE_OUTPUT_ENABLED=false`; no Piper setup is needed. |
-| faster-whisper reports missing/incompatible weights | Run `uv run --extra speech assistant speech-download`; point `ASSISTANT_FASTER_WHISPER_MODEL` at the complete CTranslate2 directory, not the chat GGUF or a whisper.cpp file. On this Mac use `cpu` and `int8`, then restart speech. |
+| Voice is disabled or unavailable | Follow the README voice setup, start `uv run assistant speech`, wait for startup, check `curl -fsS http://127.0.0.1:8765/health`, then restart the bot with voice enabled. For input with text replies, set `ASSISTANT_VOICE_OUTPUT_ENABLED=false`; no Piper setup is needed. |
+| faster-whisper reports missing/incompatible weights | Run `uv run assistant speech-download`; point `ASSISTANT_FASTER_WHISPER_MODEL` at the complete CTranslate2 directory, not the chat GGUF or a whisper.cpp file. On this Mac use `cpu` and `int8`, then restart speech. |
 | Search says it is unconfigured | Check `ASSISTANT_SEARCH_PROVIDER`. DuckDuckGo needs no key; Tavily needs its key. Restart the API after edits. Job search also needs selected job domains. |
 | DuckDuckGo search fails or is rate-limited | Try later or supply a public URL. The app reports the failure and does not silently switch search providers. |
 | Weather still uses search or denies access | Restart the API to load `get_weather`. Check `ASSISTANT_WEATHER_ENABLED=true`; `/v1/status` reports `web_capabilities.weather`. Open-Meteo works independently of DuckDuckGo/Tavily. |
@@ -410,21 +405,22 @@ or closing a terminal does not automatically launch the dependent services.
 
 | Feature | Additional setup | Running processes |
 | --- | --- | --- |
-| Semantic memory/RAG | Install embeddings extra, configure HTTP embeddings, then reindex | Local embeddings companion on port 8081, plus the base stack |
-| Voice input | Install the speech extra and download faster-whisper; configure CPU/INT8 and enable voice | Speech companion on port 8765 and restarted bot; text replies work without TTS |
-| Voice output | Follow [Piper setup](voice.md): install `--extra tts` and FFmpeg; configure voice/config files | Start with `--extra tts`, set `ASSISTANT_VOICE_OUTPUT_ENABLED=true`, then `/audio on`; language is automatic |
-| PDF reading/uploads | Install the PDF extra, create `data/pdf`, enable PDF in `.env`; OCR needs language files | Managed stdio server; uploads accepted as Telegram documents; [setup](pdf.md) |
+| Semantic memory/RAG | Set `ASSISTANT_EMBEDDING_BACKEND=http`, configure embeddings, then reindex | Launcher starts the embedding companion on port 8081 |
+| Voice input | Download faster-whisper weights, configure CPU/INT8, set `ASSISTANT_VOICE_ENABLED=true` | Launcher starts the speech companion on port 8765; text replies work without TTS |
+| Voice output | Follow [Piper setup](voice.md): install FFmpeg and download voice/config files | Set `ASSISTANT_VOICE_OUTPUT_ENABLED=true`, restart, then `/audio on`; language is automatic |
+| PDF reading/uploads | Create `data/pdf`, set `ASSISTANT_PDF_ENABLED=true`; OCR needs language files | Managed stdio server; uploads accepted as Telegram documents; [setup](pdf.md) |
 | Image understanding | Select a vision-capable model/profile; local inference needs its matching mmproj | Existing model service; [setup](images.md) |
 | Reminder delivery | Configure Telegram owner, Redis, and reminder scheduling | Redis, Celery worker, and Celery Beat scheduler |
 
 See [semantic memory](../README.md#semantic-memory-and-rag),
 [voice setup](../README.md#local-voice), and [reminders](../README.md#reminders)
-for their commands. Each optional foreground companion needs its own terminal.
+for their setup. `assistant start` supervises enabled native companions together;
+manual startup uses a separate terminal for each process.
 
 ## Optional Python calculations and charts
 
-Follow [Python analysis setup](python-analysis.md), enable `ASSISTANT_PYTHON_ENABLED`,
-and include `--extra python-runner` in the startup command. The launcher builds the
+Follow [Python analysis setup](python-analysis.md) and enable `ASSISTANT_PYTHON_ENABLED`.
+The normal `uv run assistant start` command builds the
 worker image and starts its private broker automatically. Docker is required even
 when inference runs natively. No code runs directly on your Mac as a fallback.
 

@@ -10,12 +10,11 @@ to the package's text/OCR functions and never registers its write-to-file tool.
 From the project root:
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra speech --extra pdf
+uv sync --frozen
 mkdir -p data/pdf data/tessdata
 ```
 
-Keep extras for other enabled companions, such as `--extra embeddings`, when syncing.
-In your existing private `.env`, add or update:
+PDF/MCP libraries are installed by default. In your existing private `.env`, set:
 
 ```dotenv
 ASSISTANT_PDF_ENABLED=true
@@ -28,10 +27,10 @@ Send a PDF as a Telegram **file/document**, or copy a local PDF into `data/pdf`.
 Restart the launcher after installing this update:
 
 ```sh
-uv run --extra speech --extra pdf assistant start
+uv run assistant start
 ```
 
-For a text-only setup, omit `--extra speech`. The assistant launches and closes its
+The startup command does not change when speech is enabled. The assistant launches and closes its
 stdio server automatically during MCP discovery/reads. No extra terminal, network
 port, API key, or generic MCP JSON configuration is needed. `pdf-reader` is a reserved
 server name while the managed integration is enabled. Other configured servers remain
@@ -77,6 +76,14 @@ can read another range or request OCR using the exact uploaded file reference. A
 PDF replies require response review; incomplete excerpts never establish whole-file
 analysis. Original file bytes stay on disk; only digest/metadata/excerpts enter the
 database and checkpoints. Uploading authorizes storing that file, not note/fact writes.
+
+Uploaded PDFs are read with `mcp_read` on `pdf-reader/read_pdf_pages`, rather than the
+web-page tool `read_page`. If a plan uses `read_page` with the current upload's exact
+filename or stored reference, the application resolves it to that PDF read before
+checking permissions. Other paths and web URLs keep their normal access rules.
+Excerpts report `text_truncated=true` when the extracted text exceeds the byte limit.
+The page range and total page count describe the document's pages; even reading
+pages 1–2 of a two-page PDF can leave text omitted from the supplied excerpt.
 
 Migration `0004` adds upload identity and cached evidence for retries. `assistant start`
 applies it; for manual startup run `uv run assistant migrate` before restarting the

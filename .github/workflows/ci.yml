@@ -3,9 +3,6 @@ on: [push, pull_request]
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        extras: ["", "--extra speech --extra tts"]
     services:
       postgres:
         image: pgvector/pgvector:pg17
@@ -24,42 +21,55 @@ jobs:
         with:
           version: "0.11.15"
           python-version: "3.12"
-      - run: uv sync --frozen --extra dev --extra mcp --extra pdf --extra python-runner ${{ matrix.extras }}
+      - run: uv sync --frozen --extra dev
       - run: uv run ruff check .
       - run: uv run ruff format --check .
       - run: uv run assistant migrate
       - run: uv run alembic check
       - run: uv run pytest
       - name: Build isolated Python worker
-        if: matrix.extras == ''
         timeout-minutes: 10
         run: docker build -f Dockerfile.python -t personal-assistant-python:local .
       - name: Verify real Python execution and isolation
-        if: matrix.extras == ''
         timeout-minutes: 5
         env:
           TEST_PYTHON_DOCKER: "1"
         run: uv run pytest -q tests/test_python_analysis.py -k real_docker
       - run: uv run assistant demo
       - name: Build deployment image
-        if: matrix.extras == ''
         timeout-minutes: 10
         run: docker build -t assistant-ci .
+      - name: Verify packaged feature dependencies
+        run: |
+          docker run --rm --network none -i assistant-ci python - <<'PY'
+          import shutil
+          import subprocess
+          from faster_whisper import WhisperModel
+          from piper import PiperVoice
+          from lingua import LanguageDetectorBuilder
+          from sentence_transformers import SentenceTransformer
+          import docker
+          import mcp
+          import pdf_server
+          import pymupdf
+          assert shutil.which("piper")
+          assert shutil.which("ffmpeg")
+          subprocess.run(["ffmpeg", "-version"], check=True, stdout=subprocess.DEVNULL)
+          print("All feature dependencies are available in the default image.")
+          PY
       - name: Start deployment image against test PostgreSQL
-        if: matrix.extras == ''
         run: >-
           docker run -d --rm --name assistant-smoke --network host
           -e ASSISTANT_DATABASE_URL
           -e ASSISTANT_API_TOKEN=ci-only-application-token-at-least-32-characters
           assistant-ci assistant api --port 18000
       - name: Check deployed API health and authentication
-        if: matrix.extras == ''
         run: |
           curl --fail --retry 30 --retry-connrefused --retry-delay 1 --max-time 2 http://127.0.0.1:18000/health
           test "$(curl --silent --output /dev/null --write-out '%{http_code}' http://127.0.0.1:18000/v1/status)" = 401
           curl --fail -H 'Authorization: Bearer ci-only-application-token-at-least-32-characters' http://127.0.0.1:18000/v1/status
       - name: Deployment logs and cleanup
-        if: always() && matrix.extras == ''
+        if: always()
         run: |
           docker logs assistant-smoke || true
           docker rm -f assistant-smoke || true

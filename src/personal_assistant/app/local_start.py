@@ -98,13 +98,13 @@ def plan(settings: Settings, *, no_bot: bool = False) -> list[Service]:
     executable("docker", "Docker")
     if settings.pdf_enabled:
         if any(importlib.util.find_spec(name) is None for name in ("pdf_server", "pymupdf")):
-            raise StartupError("PDF reading enabled: add --extra pdf to uv run.")
+            raise StartupError("PDF dependencies are missing; run `uv sync --frozen`.")
         if not settings.pdf_directory.is_dir():
             raise StartupError("Create ASSISTANT_PDF_DIRECTORY (default: mkdir -p data/pdf).")
     services = []
     if settings.python_enabled:
         if importlib.util.find_spec("docker") is None:
-            raise StartupError("Python analysis enabled: add --extra python-runner to uv run.")
+            raise StartupError("Python runner dependency is missing; run `uv sync --frozen`.")
         services.append(endpoint("python-runner", settings.python_runner_url, ""))
     if settings.model_provider == "local":
         if not settings.local_model_file or not settings.local_model_file.is_file():
@@ -124,14 +124,14 @@ def plan(settings: Settings, *, no_bot: bool = False) -> list[Service]:
         )
     if settings.embedding_backend == "http":
         if importlib.util.find_spec("sentence_transformers") is None:
-            raise StartupError("Embeddings enabled: add --extra embeddings to uv run.")
+            raise StartupError("Embedding dependencies are missing; run `uv sync --frozen`.")
         if settings.embedding_api_key.get_secret_value() != settings.api_token.get_secret_value():
             raise StartupError("Native embeddings require EMBEDDING_API_KEY to match API_TOKEN.")
         services.append(endpoint("embeddings", settings.embedding_base_url, "/v1"))
     if settings.voice_enabled:
         if settings.stt_backend == "faster_whisper":
             if importlib.util.find_spec("faster_whisper") is None:
-                raise StartupError("Speech enabled: use uv run --extra speech assistant start.")
+                raise StartupError("Speech dependencies are missing; run `uv sync --frozen`.")
             if not (Path(settings.faster_whisper_model) / "model.bin").is_file():
                 raise StartupError(
                     "Download the faster-whisper model first; see README.md voice setup."
@@ -145,8 +145,8 @@ def plan(settings: Settings, *, no_bot: bool = False) -> list[Service]:
         from personal_assistant.media.tts import voice_models, voice_ready
 
         if importlib.util.find_spec("lingua") is None:
-            raise StartupError("TTS enabled: add --extra tts to uv run.")
-        executable(settings.piper_executable, "Piper (--extra tts)")
+            raise StartupError("TTS dependencies are missing; run `uv sync --frozen`.")
+        executable(settings.piper_executable, "Piper")
         executable(settings.ffmpeg_executable, "FFmpeg")
         if not any(voice_ready(model) for model in voice_models(settings).values()):
             raise StartupError(

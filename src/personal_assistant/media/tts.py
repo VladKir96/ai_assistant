@@ -47,7 +47,7 @@ def language_detector():
     try:
         from lingua import Language, LanguageDetectorBuilder
     except ImportError:
-        raise ValueError("Install automatic TTS language detection with --extra tts") from None
+        raise ValueError("TTS dependencies are missing; run `uv sync --frozen`.") from None
     # Lingua's Serbian model is Cyrillic. Croatian/Bosnian provide the Latin-script
     # statistics for the same voice route within our supported en/ru/sr language set.
     return LanguageDetectorBuilder.from_languages(

@@ -26,7 +26,9 @@ def create_embedding_app(settings: Settings | None = None):
         try:
             from sentence_transformers import SentenceTransformer
         except ImportError as error:
-            raise RuntimeError("Install the embeddings optional dependency") from error
+            raise RuntimeError(
+                "Embedding dependencies are missing; run `uv sync --frozen`."
+            ) from error
         app.state.encoder = await asyncio.to_thread(
             SentenceTransformer,
             settings.embedding_model,

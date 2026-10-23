@@ -29,14 +29,14 @@ are not implemented.
 From the project root:
 
 ```sh
-uv sync --frozen --extra dev --extra mcp --extra tts
+uv sync --frozen
 brew install ffmpeg
 mkdir -p models/piper
-uv run --extra tts python -m piper.download_voices --download-dir models/piper en_US-lessac-medium ru_RU-denis-medium
+uv run python -m piper.download_voices --download-dir models/piper en_US-lessac-medium ru_RU-denis-medium
 ```
 
-If voice input is also enabled, include `--extra speech` in your `uv` commands. Piper
-output does not require a Whisper model. On Linux, install FFmpeg using your distribution's
+All Python speech dependencies are included in the normal installation. Piper output
+does not require a Whisper model. On Linux, install FFmpeg using your distribution's
 package manager. A custom FFmpeg/Piper executable can be configured using the existing
 executable settings.
 
@@ -82,19 +82,13 @@ API also needs the correct Telegram owner ID to scope the saved preference.
 Stop previously started services, then run:
 
 ```sh
-uv run --extra tts assistant start --check
-uv run --extra tts assistant start
+uv run assistant start --check
+uv run assistant start
 ```
 
-For both voice input with faster-whisper and Piper output:
-
-```sh
-uv run --extra speech --extra tts assistant start
-```
-
-Add other extras you use, such as `--extra pdf` or `--extra python-runner`. The launcher
-runs the new database migration automatically. With manual startup, run
-`uv run assistant migrate`, start `uv run --extra tts assistant speech`, start the API,
+The same command handles input, output, or both, according to `.env`. The launcher
+runs the database migrations automatically. With manual startup, run
+`uv run assistant migrate`, start `uv run assistant speech`, start the API,
 and restart the bot. TTS-only startup does not load Whisper weights.
 
 Check:

@@ -58,9 +58,7 @@ class MCPTools:
             from mcp import ClientSession, StdioServerParameters
             from mcp.client.stdio import stdio_client
         except ImportError as error:
-            raise ValueError(
-                "Install the mcp optional dependency to use MCP integrations"
-            ) from error
+            raise ValueError("MCP dependencies are missing; run `uv sync --frozen`.") from error
         config = self.servers[name]
         env = {key: os.environ[key] for key in config.environment_variables if key in os.environ}
         parameters = StdioServerParameters(command=config.command, args=config.args, env=env)

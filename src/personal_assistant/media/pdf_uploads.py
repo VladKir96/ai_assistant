@@ -41,9 +41,7 @@ class PDFUploads:
         try:
             import pymupdf
         except ImportError:
-            raise PDFUnavailable(
-                "Install the PDF extra: uv run --extra pdf assistant start"
-            ) from None
+            raise PDFUnavailable("PDF dependencies are missing; run `uv sync --frozen`.") from None
         try:
             with pymupdf.open(stream=raw, filetype="pdf") as document:
                 if not document.is_pdf or document.needs_pass or not len(document):
@@ -105,7 +103,7 @@ class PDFUploads:
     async def prepare(self, raw: bytes, filename: str) -> dict:
         if not self.enabled:
             raise PDFUnavailable(
-                "PDF uploads are disabled; enable ASSISTANT_PDF_ENABLED and install --extra pdf"
+                "PDF uploads are disabled; enable ASSISTANT_PDF_ENABLED and restart the API"
             )
         try:
             return await asyncio.to_thread(self.store, raw, filename)

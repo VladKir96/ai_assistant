@@ -8,9 +8,10 @@ import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from sqlalchemy import select
 
-from personal_assistant.agent.graph import Draft
+from personal_assistant.agent.graph import AssistantGraph, Draft
+from personal_assistant.agent.tool_execution import ToolExecutor
 from personal_assistant.app.api import create_app
-from personal_assistant.core.schemas import Action, ChatRequest, Plan, Review
+from personal_assistant.core.schemas import Action, AgentTask, ChatRequest, Plan, Review
 from personal_assistant.inference.llm import ModelError
 from personal_assistant.integrations.mcp_tools import MCPTools
 from personal_assistant.media.pdf_mcp import PDFReader
@@ -113,6 +114,8 @@ async def test_pdf_multipart_to_real_mcp_to_review_with_text_only_model(
         evidence = payload["pdf_evidence"]
         assert evidence["untrusted"] and "Привет PDF" in evidence["excerpt"]
         assert evidence["page_count"] == 4 and evidence["initial_pages"] == [1, 3]
+        assert evidence["read_action"]["name"] == "mcp_read"
+        assert evidence["read_action"]["mcp_arguments"]["file_path"] == evidence["file_path"]
         assert "Fourth page" not in evidence["excerpt"]
         assert payload["latest_request"] == "Кратко опиши PDF"
     history = await active.service.history("default")
@@ -244,3 +247,76 @@ async def test_pdf_review_replans_and_reads_missing_fourth_page(harness, uploads
     assert response.review_status == "accepted" and response.review_replans == 1
     assert "Fourth page" in model.calls[-1][1]["evidence"][0]["data"]
     assert response.operations[0]["action"] == "mcp_read" and response.operations[0]["ok"]
+
+
+@pytest.mark.parametrize("reference_kind", ["file_path", "filename"])
+@pytest.mark.parametrize("team", [False, True])
+async def test_uploaded_pdf_web_read_is_resolved_to_pdf_reader(
+    harness, uploads, pdf_folder, reference_kind, team, monkeypatch
+):
+    raw = (pdf_folder / "fixture.pdf").read_bytes()
+    attachment = uploads.store(raw, "resume.pdf")
+    action = Action(name="read_page", url=attachment[reference_kind])
+    plan = Plan(specialist="knowledge", actions=[action])
+    replies = [Draft(answer="resume.pdf, page 1: Hello PDF.")]
+    if team:
+        plan = Plan(
+            specialist="knowledge",
+            agents=[
+                AgentTask(specialist="knowledge", task="Read the attached PDF", actions=[action]),
+                AgentTask(specialist="general", task="Explain the excerpt limits"),
+            ],
+        )
+        replies += [Draft(answer="The excerpt is bounded."), Draft(answer="A bounded PDF summary.")]
+    model = ScriptedModel(plan, *replies, Review(decision="accept"))
+    active = harness.runtime(model)
+    active.service.pdfs = uploads
+
+    async def no_web(*args):
+        pytest.fail("An uploaded PDF must not be fetched as a web page")
+
+    monkeypatch.setattr("personal_assistant.integrations.research.Research.read", no_web)
+    response = await active.service.chat(
+        ChatRequest(text="Summarize this PDF"), pdf=raw, filename="resume.pdf"
+    )
+    assert response.review_status == "accepted"
+    assert response.operations == [{"action": "mcp_read", "ok": True}]
+    assert "Operations not completed" not in response.text
+    reviewer = model.calls[-1][1]
+    assert "Hello PDF" in reviewer["evidence"][0]["data"]
+    assert "pages 1-3 of 4" in reviewer["evidence"][0]["data"]
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["https://example.org/resume.pdf", "file:///etc/passwd", "../resume.pdf", "other.pdf"],
+)
+async def test_pdf_read_resolution_does_not_grant_web_or_other_file_access(
+    harness, uploads, pdf_folder, url
+):
+    attachment = uploads.store((pdf_folder / "fixture.pdf").read_bytes(), "resume.pdf")
+    graph = object.__new__(AssistantGraph)
+    action = Action(name="read_page", url=url)
+    results = await graph.action_results(
+        {"pdf_evidence": attachment}, "knowledge", [action.model_dump(exclude_defaults=True)]
+    )
+    assert not results[0]["ok"]
+    assert results[0]["action"] == "read_page"
+    assert "not allowed" in results[0]["error"]
+
+
+async def test_pdf_read_resolution_also_handles_pending_checkpoint_actions(
+    harness, uploads, pdf_folder
+):
+    attachment = uploads.store((pdf_folder / "fixture.pdf").read_bytes(), "resume.pdf")
+    graph = object.__new__(AssistantGraph)
+    graph.executor = ToolExecutor(harness.repository, None, uploads.mcp, None)
+    # Bypass planning, as a resumed checkpoint does when its next node is a specialist.
+    results = await graph.action_results(
+        {"pdf_evidence": attachment},
+        "knowledge",
+        [{"name": "read_page", "url": attachment["file_path"]}],
+    )
+    assert results[0]["ok"] and results[0]["action"] == "mcp_read"
+    assert results[0]["arguments"]["mcp_arguments"]["file_path"] == attachment["file_path"]
+    assert "Hello PDF" in results[0]["result"]["content"]
