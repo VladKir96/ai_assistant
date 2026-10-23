@@ -193,6 +193,10 @@ class DockerExecutor:
         finally:
             if timer:
                 timer.cancel()
+                # cancel() cannot stop an active timeout callback. Let its Docker
+                # removal finish before retrying cleanup or closing the client.
+                if timer.ident is not None:
+                    timer.join()
             if container:
                 remove()
             if client:

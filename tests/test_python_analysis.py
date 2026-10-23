@@ -4,6 +4,7 @@ import io
 import json
 import os
 import stat
+import threading
 from types import SimpleNamespace
 
 import httpx
@@ -376,6 +377,80 @@ def test_docker_configuration_has_no_network_host_mounts_or_credentials(monkeypa
         "OMP_NUM_THREADS",
     }
     assert container.removed
+
+
+@pytest.mark.parametrize("first_removal_fails", [False, True])
+def test_timeout_cleanup_finishes_before_client_closes(monkeypatch, first_removal_fails):
+    from personal_assistant.integrations import python_runner as module
+
+    removing, release, cleanup_progress, joining, closed = (threading.Event() for _ in range(5))
+    results, timers = [], []
+
+    class Timer(threading.Timer):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            timers.append(self)
+
+        def join(self, *args, **kwargs):
+            joining.set()
+            cleanup_progress.set()
+            return super().join(*args, **kwargs)
+
+    class Container:
+        removed = False
+        calls = 0
+
+        def start(self):
+            pass
+
+        def remove(self, force):
+            assert force
+            self.calls += 1
+            if self.calls == 1:
+                removing.set()
+                if not release.wait(5):
+                    raise TimeoutError("Test did not release container removal")
+                if first_removal_fails:
+                    raise OSError("Temporary Docker removal failure")
+            elif not release.is_set():
+                raise RuntimeError("Container removal already in progress")
+            self.removed = True
+
+    container = Container()
+
+    def close():
+        closed.set()
+        cleanup_progress.set()
+
+    def execute(*args):
+        assert removing.wait(5)
+        # Killing the sandbox ends its exec stream before removal has completed.
+        raise TimeoutError
+
+    client = SimpleNamespace(
+        containers=SimpleNamespace(create=lambda *args, **kwargs: container), close=close
+    )
+    monkeypatch.setattr(module, "docker_client", lambda: client)
+    monkeypatch.setattr(module, "exec_python", execute)
+    monkeypatch.setattr(module, "TIMEOUT", 0)
+    monkeypatch.setattr(module.threading, "Timer", Timer)
+    worker = threading.Thread(
+        target=lambda: results.append(DockerExecutor("trusted-image").execute("pass"))
+    )
+    worker.start()
+    try:
+        assert cleanup_progress.wait(5)
+        assert joining.is_set(), "Executor returned without waiting for timeout cleanup"
+        assert not closed.is_set(), "Docker client closed during container removal"
+        assert not results
+    finally:
+        release.set()
+        worker.join(5)
+        for timer in timers:
+            timer.join(5)
+    assert not worker.is_alive()
+    assert container.removed and closed.is_set()
+    assert results[0]["status"] == "error" and "timed out" in results[0]["error"]
 
 
 @pytest.mark.skipif(
